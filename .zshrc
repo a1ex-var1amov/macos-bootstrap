@@ -1,154 +1,253 @@
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block; everything else may go below.
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+# --- Homebrew completions BEFORE compinit ---
+if [[ -d /opt/homebrew/share/zsh/site-functions ]]; then
+  fpath=(/opt/homebrew/share/zsh/site-functions $fpath)
+elif [[ -d /usr/local/share/zsh/site-functions ]]; then
+  fpath=(/usr/local/share/zsh/site-functions $fpath)
 fi
 
-# If you come from bash you might have to change your $PATH.
-# export PATH=$HOME/bin:/usr/local/bin:$PATH
+# --- Static, cached completions for wrapper names (no subprocess on startup) ---
+# Generate once:
+#   mkdir -p ~/.zsh/completions
+#   kubectl completion zsh > ~/.zsh/completions/_kubectl
+#   oc completion zsh       > ~/.zsh/completions/_oc
+fpath=($HOME/.zsh/completions $fpath)
 
-# Path to your oh-my-zsh installation.
-export ZSH="$HOME/.oh-my-zsh"
+# --- Completion (cached, once) ---
+# Use a per-host/version dump to avoid unnecessary rebuilds
+ZSH_COMPDUMP="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/.zcompdump-${HOST}-${ZSH_VERSION}"
+mkdir -p "${ZSH_COMPDUMP:h}"
+autoload -Uz compinit
+# Use -C to skip expensive checks when the compdump exists
+if [[ -f $ZSH_COMPDUMP ]]; then
+  compinit -C -d "$ZSH_COMPDUMP"
+else
+  compinit -i -d "$ZSH_COMPDUMP"
+fi
+setopt complete_aliases
 
-# Set name of the theme to load --- if set to "random", it will
-# load a random theme each time oh-my-zsh is loaded, in which case,
-# to know which specific one was loaded, run: echo $RANDOM_THEME
-# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
-# ZSH_THEME="robbyrussell"
-# ZSH_THEME="powerlevel9k/powerlevel9k"
+# --- History and shell options ---
+HISTFILE="${XDG_STATE_HOME:-$HOME/.local/state}/zsh/history"
+mkdir -p "${HISTFILE:h}"
+HISTSIZE=200000
+SAVEHIST=200000
+setopt INC_APPEND_HISTORY        # write history incrementally
+setopt SHARE_HISTORY             # share history across sessions
+setopt HIST_IGNORE_ALL_DUPS      # remove older duplicate entries
+setopt HIST_FIND_NO_DUPS         # skip duplicates when searching
+setopt HIST_REDUCE_BLANKS        # trim superfluous blanks
+setopt HIST_IGNORE_SPACE         # ignore commands starting with space
+setopt HIST_VERIFY               # show command with history expansion before running
+setopt HIST_FCNTL_LOCK           # use better locking for history file
+setopt EXTENDED_HISTORY          # save timestamp and duration
+setopt EXTENDED_GLOB             # better globbing
+setopt INTERACTIVE_COMMENTS      # allow comments in interactive shell
+setopt AUTO_PUSHD PUSHD_SILENT PUSHD_IGNORE_DUPS
+setopt CORRECT                   # correct typos in commands
+setopt COMPLETE_IN_WORD          # complete from both ends of a word
+setopt ALWAYS_TO_END             # move cursor to end after completion
+setopt AUTO_CD                   # cd by typing directory name if it's not a command
+setopt AUTO_LIST                 # automatically list choices on ambiguous completion
+setopt AUTO_MENU                 # show completion menu on successive tab presses
+setopt NO_BEEP                   # disable beep on error
+setopt NO_CASE_GLOB              # case-insensitive globbing
+setopt NUMERIC_GLOB_SORT         # sort numeric filenames numerically
 
-ZSH_THEME="powerlevel10k/powerlevel10k"
+# Optional: byte-compile compdump for tiny extra speed
+[[ ! -f ${ZSH_COMPDUMP}.zwc || $ZSH_COMPDUMP -nt ${ZSH_COMPDUMP}.zwc ]] && zcompile -R -- "${ZSH_COMPDUMP}.zwc" "$ZSH_COMPDUMP"
 
-# Set list of themes to pick from when loading at random
-# Setting this variable when ZSH_THEME=random will cause zsh to load
-# a theme from this variable instead of looking in $ZSH/themes/
-# If set to an empty array, this variable will have no effect.
-# ZSH_THEME_RANDOM_CANDIDATES=( "robbyrussell" "agnoster" )
+# --- Wrapper functions with fallback ---
+kubectl() { if (( $+commands[kubecolor] )); then command kubecolor "$@"; else command kubectl "$@"; fi }
+oc()      { if (( $+commands[kubecolor] )); then KUBECOLOR_KUBECTL=oc command kubecolor "$@"; else command oc "$@"; fi }
 
-# Uncomment the following line to use case-sensitive completion.
-# CASE_SENSITIVE="true"
+compdef _kubectl kubectl
+compdef _oc oc
 
-# Uncomment the following line to use hyphen-insensitive completion.
-# Case-sensitive completion must be off. _ and - will be interchangeable.
-# HYPHEN_INSENSITIVE="true"
+# --- PATH ---
+# Deduplicate PATH entries
+typeset -U path
 
-# Uncomment one of the following lines to change the auto-update behavior
-# zstyle ':omz:update' mode disabled  # disable automatic updates
-# zstyle ':omz:update' mode auto      # update automatically without asking
-# zstyle ':omz:update' mode reminder  # just remind me to update when it's time
+# Add to PATH (prepend for priority)
+path=("${KREW_ROOT:-$HOME/.krew}/bin" "$HOME/.local/bin" $path)
 
-# Uncomment the following line to change how often to auto-update (in days).
-# zstyle ':omz:update' frequency 13
+# Export PATH
+export PATH
 
-# Uncomment the following line if pasting URLs and other text is messed up.
-# DISABLE_MAGIC_FUNCTIONS="true"
+# --- Plugins (guarded). Keep ONLY ONE highlighter; fast is, well, faster. ---
+# zsh-autosuggestions
+[[ -r /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]] && \
+  source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 
-# Uncomment the following line to disable colors in ls.
-# DISABLE_LS_COLORS="true"
+# zsh-fast-syntax-highlighting (load AFTER completion & autosuggestions)
+[[ -r /opt/homebrew/opt/zsh-fast-syntax-highlighting/share/zsh-fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh ]] && \
+  source /opt/homebrew/opt/zsh-fast-syntax-highlighting/share/zsh-fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
 
-# Uncomment the following line to disable auto-setting terminal title.
-# DISABLE_AUTO_TITLE="true"
+# If you prefer the regular highlighter, comment out the fast one above and use this instead (but not both):
+# [[ -r /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]] && \
+#   source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
-# Uncomment the following line to enable command auto-correction.
-# ENABLE_CORRECTION="true"
+# zoxide (smart cd)
+(( $+commands[zoxide] )) && eval "$(zoxide init zsh)"
 
-# Uncomment the following line to display red dots whilst waiting for completion.
-# You can also set it to another string to have that shown instead of the default red dots.
-# e.g. COMPLETION_WAITING_DOTS="%F{yellow}waiting...%f"
-# Caution: this setting can cause issues with multiline prompts in zsh < 5.7.1 (see #5765)
-# COMPLETION_WAITING_DOTS="true"
+# fzf (fuzzy finder): key bindings and completion
+[[ -r /opt/homebrew/opt/fzf/shell/key-bindings.zsh ]] && source /opt/homebrew/opt/fzf/shell/key-bindings.zsh
+[[ -r /opt/homebrew/opt/fzf/shell/completion.zsh    ]] && source /opt/homebrew/opt/fzf/shell/completion.zsh
 
-# Uncomment the following line if you want to disable marking untracked files
-# under VCS as dirty. This makes repository status check for large repositories
-# much, much faster.
-# DISABLE_UNTRACKED_FILES_DIRTY="true"
+# --- Completion styling ---
+zstyle ':completion:*' menu select                              # enable selection menu
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'      # case-insensitive matching
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"        # use LS_COLORS for completion
+zstyle ':completion:*' group-name ''                            # group results
+zstyle ':completion:*' format '%B%d%b'                         # format group names
+zstyle ':completion:*:descriptions' format '%U%F{cyan}%d%f%u'  # format descriptions
+zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
+zstyle ':completion:*' rehash true                              # rehash on completion
 
-# Uncomment the following line if you want to change the command execution time
-# stamp shown in the history command output.
-# You can set one of the optional three formats:
-# "mm/dd/yyyy"|"dd.mm.yyyy"|"yyyy-mm-dd"
-# or set a custom format using the strftime function format specifications,
-# see 'man strftime' for details.
-# HIST_STAMPS="mm/dd/yyyy"
+# zsh-vi-mode (enhanced vi-mode; safe to load without bindkey -v)
+[[ -r /opt/homebrew/share/zsh-vi-mode/zsh-vi-mode.plugin.zsh ]] && \
+  source /opt/homebrew/share/zsh-vi-mode/zsh-vi-mode.plugin.zsh
 
-# Would you like to use another custom folder than $ZSH/custom?
-# ZSH_CUSTOM=/path/to/new-custom-folder
+# direnv (per-directory environment automation)
+(( $+commands[direnv] )) && eval "$(direnv hook zsh)"
 
-# Which plugins would you like to load?
-# Standard plugins can be found in $ZSH/plugins/
-# Custom plugins may be added to $ZSH_CUSTOM/plugins/
-# Example format: plugins=(rails git textmate ruby lighthouse)
-# Add wisely, as too many plugins slow down shell startup.
-plugins=(kube-ps1 git zsh-autosuggestions)
+# Load history file after all plugins (some plugins may reset history settings)
+fc -R "$HISTFILE" 2>/dev/null || true
 
-source $ZSH/oh-my-zsh.sh
-
-# User configuration
-
-# export MANPATH="/usr/local/man:$MANPATH"
-
-# You may need to manually set your language environment
-# export LANG=en_US.UTF-8
-
-# Preferred editor for local and remote sessions
-# if [[ -n $SSH_CONNECTION ]]; then
-#   export EDITOR='vim'
-# else
-#   export EDITOR='mvim'
-# fi
-
-# Compilation flags
-# export ARCHFLAGS="-arch x86_64"
-
-# Set personal aliases, overriding those provided by oh-my-zsh libs,
-# plugins, and themes. Aliases can be placed here, though oh-my-zsh
-# users are encouraged to define aliases within the ZSH_CUSTOM folder.
-# For a full list of active aliases, run `alias`.
-#
-# Example aliases
-# alias zshconfig="mate ~/.zshrc"
-# alias ohmyzsh="mate ~/.oh-my-zsh"
-
-alias sysdig-folder="cd ~/sysdig"
-alias k="kubectl"
-
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f '/Users/aleksandr.varlamov/Downloads/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/aleksandr.varlamov/Downloads/google-cloud-sdk/path.zsh.inc'; fi
-
-# The next line enables shell command completion for gcloud.
-if [ -f '/Users/aleksandr.varlamov/Downloads/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/aleksandr.varlamov/Downloads/google-cloud-sdk/completion.zsh.inc'; fi
-alias kn=kubens
-alias kx=kubectx
-source <(kubectl completion zsh)
-
-export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
-
-#source "/opt/homebrew/opt/kube-ps1/share/kube-ps1.sh"
-# PS1='$(kube_ps1)'$PS1
-
-alias cstart='colima start && export DOCKER_HOST=unix:///Users/$USER/.colima/default/docker.sock'
-alias cstop='colima stop && rm /Users/$USER/.docker/config.json && unset DOCKER_HOST'
-alias cstatus='colima status'
-alias ckstop='colima kubernetes stop'
-alias ckstart='colima kubernetes start'
-alias tf='terraform'
-
-alias eks1='kx admin@a1ex22-01.us-east-2.eksctl.io'
-alias eks2='kx admin@a1ex22-02.us-east-2.eksctl.io'
-
-if [ -f ${HOME}/.zplug/init.zsh ]; then
-    source ${HOME}/.zplug/init.zsh
+# fzf-tab (enhanced completion UI) — load if installed
+if [[ -r "${HOME}/.zsh/plugins/fzf-tab/fzf-tab.plugin.zsh" ]]; then
+  source "${HOME}/.zsh/plugins/fzf-tab/fzf-tab.plugin.zsh"
 fi
 
-export ZPLUG_HOME=$(brew --prefix)/opt/zplug
-source $ZPLUG_HOME/init.zsh
+# --- Optional: vi-mode to leverage Starship's vimcmd_symbol ---
+# bindkey -v
+# KEYTIMEOUT=1
 
-# Generated for envman. Do not edit.
-[ -s "$HOME/.config/envman/load.sh" ] && source "$HOME/.config/envman/load.sh"
+# --- Aliases ---
+# Directory navigation
+alias ..="cd .."
+alias ...="cd ../.."
+alias ....="cd ../../.."
+alias ~="cd ~"
+alias -- -="cd -"
 
-#PROMPT='$(kube_ps1)'$PROMPT # or RPROMPT='$(kube_ps1)'
-PROMPT='%{$fg[yellow]%}[%D{%f/%m/%y} %D{%L:%M:%S}] '$PROMPT
+# Listing
+alias ll="ls -la"
+alias la="ls -la"
+alias l="ls -l"
+alias ls="ls -G"  # colorized ls on macOS
+
+# File operations
+alias tailf="tail -f"
+alias grep="grep --color=auto"
+alias fgrep="fgrep --color=auto"
+alias egrep="egrep --color=auto"
+
+# Editors
+alias vi="nvim"
+alias vim="nvim"
+alias edit="nvim"
+
+# Kubernetes
+alias k=kubectl
+alias kgp="kubectl get pods"
+alias kgs="kubectl get svc"
+alias kgd="kubectl get deploy"
+alias kgn="kubectl get nodes"
+alias kdp="kubectl describe pod"
+alias kdel="kubectl delete"
+alias kaf="kubectl apply -f"
+alias kdf="kubectl delete -f"
+alias rke2-dev="kubie ctx sc-k8s-rke2-dev"
+alias rke2-prod="kubie ctx sc-hwinf-02"
+
+# Git shortcuts
+alias gs="git status"
+alias ga="git add"
+alias gc="git commit"
+alias gp="git push"
+alias gl="git pull"
+alias gd="git diff"
+alias gb="git branch"
+alias gco="git checkout"
+alias glog="git log --oneline --graph --decorate"
+
+# System
+alias df="df -h"
+alias du="du -h"
+alias free="top -l 1 | head -n 10 | grep PhysMem"  # macOS memory info
+alias ports="lsof -i -P -n | grep LISTEN"          # show listening ports
+
+# Safety
+alias rm="rm -i"
+alias cp="cp -i"
+alias mv="mv -i"
+
+# Misc
+alias reload="source ~/.zshrc"
+alias path="echo $PATH | tr ':' '\n'"
+alias now="date '+%Y-%m-%d %H:%M:%S'"
+
+# --- Useful functions ---
+# Create directory and cd into it
+mkcd() { mkdir -p "$1" && cd "$1" }
+
+# Extract various archive formats
+extract() {
+  if [ -f "$1" ]; then
+    case "$1" in
+      *.tar.bz2)   tar xjf "$1"     ;;
+      *.tar.gz)    tar xzf "$1"     ;;
+      *.bz2)       bunzip2 "$1"     ;;
+      *.rar)       unrar e "$1"     ;;
+      *.gz)        gunzip "$1"      ;;
+      *.tar)       tar xf "$1"      ;;
+      *.tbz2)      tar xjf "$1"     ;;
+      *.tgz)       tar xzf "$1"     ;;
+      *.zip)       unzip "$1"       ;;
+      *.Z)         uncompress "$1"  ;;
+      *.7z)        7z x "$1"        ;;
+      *)           echo "'$1' cannot be extracted via extract()" ;;
+    esac
+  else
+    echo "'$1' is not a valid file"
+  fi
+}
+
+# Find files by name (case-insensitive)
+ff() { find . -type f -iname "*$1*" }
+
+# Find directories by name (case-insensitive)
+fdir() { find . -type d -iname "*$1*" }
+
+# Quick search in history
+h() { history | grep "$1" }
+
+# Show top 10 commands from history
+topcmd() { history | awk '{print $2}' | sort | uniq -c | sort -rn | head -10 }
+
+# --- Environment variables ---
+export EDITOR="nvim"
+export VISUAL="nvim"
+export PAGER="less"
+export LESS="-R"
+
+# --- Extra tools ---
+[[ -r ~/.config/k8pk.sh ]] && source ~/.config/k8pk.sh
+
+# --- Prompt ---
+eval "$(starship init zsh)"
+
+# --- History: Save on exit ---
+# Ensure history is saved when shell exits
+zshaddhistory() {
+  # This function is called before each command is added to history
+  # Return 0 to add, 1 to skip
+  return 0
+}
+
+# Save history on exit
+zshexit() {
+  fc -W "$HISTFILE" 2>/dev/null || true
+}
+
+# --- iTerm2 integration ---
+test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"%
