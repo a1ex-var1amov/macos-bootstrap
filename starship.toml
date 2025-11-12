@@ -1,0 +1,168 @@
+"$schema" = 'https://starship.rs/config-schema.json'
+
+add_newline = true
+
+# Lower module timeouts
+scan_timeout = 10
+command_timeout = 500
+
+# Be explicit instead of $all for speed and control
+format = '┌──\[ $directory\] $git_branch$git_status$kubernetes$python$golang$nodejs$cmd_duration$line_break└─$character'
+right_format = "$time$jobs$status$localip"
+
+palette = 'catppuccin_macchiato'
+
+[directory]
+style = "blue"
+truncate_to_repo = true
+truncation_length = 3
+
+[character]
+success_symbol = "[\\$](bold)"
+error_symbol = "[\\$](bold red)"
+vimcmd_symbol = "[\\$](bold green)"
+
+[git_branch]
+format = "[$branch]($style)"
+style = "bright-black"
+
+[git_status]
+# Keep minimal; starship runs one short git command per prompt
+format = "[[(*$conflicted$untracked$modified$staged$renamed$deleted)]($style) ($ahead_behind$stashed)]($style)"
+style = "cyan"
+conflicted = ""
+untracked  = ""
+modified   = ""
+staged     = ""
+renamed    = ""
+deleted    = ""
+ahead      = "⇡"
+behind     = "⇣"
+diverged   = "⇡⇣"
+up_to_date = ""
+stashed    = "≡"
+
+[git_state]
+format = '([$state( $progress_current/$progress_total)]($style)) '
+style = "bright-black"
+
+[cmd_duration]
+format = "[$duration]($style) "
+style = "yellow"
+min_time = 300
+show_milliseconds = true
+
+[python]
+format = "[$virtualenv]($style) [$version]($style) "
+style = "bright-black"
+detect_files = ["requirements.txt", "pyproject.toml", "Pipfile", "setup.py", "tox.ini"]
+detect_folders = [".venv", "venv", "env"]
+
+[kubernetes]
+disabled = false
+symbol = "⎈"
+format = '[$symbol](blue) [$context( \($namespace\))]($style) '
+
+[username]
+show_always = true
+format = "[$user]($style)"
+style_user = "bold cyan"
+style_root = "bold red"
+
+[hostname]
+ssh_only = false
+format = "[㉿$hostname]($style)"
+style = "bold cyan"
+
+[[kubernetes.contexts]]
+context_pattern = "arn:aws:eks:.*:cluster/(?P<cluster>[\\w-]+)"
+context_alias = "$cluster"
+
+[[kubernetes.contexts]]
+context_pattern = "gke_.*_(?P<cluster>[^_]+)$"
+context_alias = "$cluster"
+
+[[kubernetes.contexts]]
+context_pattern = "kubernetes-admin@(?P<cluster>.+)"
+context_alias = "$cluster"
+
+[[kubernetes.contexts]]
+context_pattern = "(?P<cluster>sc-k8s-[\\w-]+)"
+context_alias = "$cluster"
+
+[[kubernetes.contexts]]
+context_pattern = "docker-desktop"
+context_alias = "docker"
+
+[localip]
+ssh_only = true  # faster and less noisy locally
+format = '@[$localipv4]($style) '
+disabled = false
+
+[gcloud]
+format = '[$symbol$active]($style) '
+style = 'bold yellow'
+disabled = true
+
+[status]
+disabled = false
+format = "[$symbol$status]($style) "
+map_symbol = true
+style = "red"
+recognize_signal_code = true
+
+[time]
+disabled = false
+format = "[$time]($style) "
+style = "bright-black"
+use_12hr = false
+time_format = "%H:%M:%S"
+
+[jobs]
+disabled = false
+format = "[$symbol$number]($style) "
+style = "bright-black"
+symbol = "✦ "
+number_threshold = 1
+
+[golang]
+disabled = false
+format = "[$symbol($version )]($style)"
+style = "bright-cyan"
+symbol = "🐹 "
+
+[nodejs]
+disabled = false
+format = "[$symbol($version )]($style)"
+style = "bright-green"
+symbol = "⬢ "
+detect_files = ["package.json", ".node-version"]
+detect_folders = ["node_modules"]
+
+[palettes.catppuccin_macchiato]
+rosewater = "#f4dbd6"
+flamingo = "#f0c6c6"
+pink = "#f5bde6"
+mauve = "#c6a0f6"
+red = "#ed8796"
+maroon = "#ee99a0"
+peach = "#f5a97f"
+yellow = "#eed49f"
+green = "#a6da95"
+teal = "#8bd5ca"
+sky = "#91d7e3"
+sapphire = "#7dc4e4"
+blue = "#8aadf4"
+lavender = "#b7bdf8"
+text = "#cad3f5"
+subtext1 = "#b8c0e0"
+subtext0 = "#a5adcb"
+overlay2 = "#939ab7"
+overlay1 = "#8087a2"
+overlay0 = "#6e738d"
+surface2 = "#5b6078"
+surface1 = "#494d64"
+surface0 = "#363a4f"
+base = "#24273a"
+mantle = "#1e2030"
+crust = "#181926"
