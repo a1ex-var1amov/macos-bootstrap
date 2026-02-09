@@ -1,0 +1,163 @@
+================================================================================
+                            VIM CHEAT SHEET
+================================================================================
+  Leader = Space (press Space, then the key)
+================================================================================
+
+CUSTOM KEYBINDINGS (from your vimrc)
+--------------------------------------------------------------------------------
+  Space + w        Save file
+  Space + q        Quit
+  Space + n        Toggle line numbers
+  Space + c        Copy mode ON (for mouse select)
+  Space + C        Copy mode OFF
+  Space + v        Vertical split
+  Space + s        Horizontal split
+  Space + bn/bp    Next/previous buffer
+  Space + bd       Delete buffer
+  jk or jj         Exit insert mode (alternative to ESC)
+  Ctrl + h/j/k/l   Navigate between splits
+
+MODES
+--------------------------------------------------------------------------------
+  i               Insert mode (before cursor)
+  a               Insert mode (after cursor)
+  I               Insert at beginning of line
+  A               Insert at end of line
+  o               New line below, insert mode
+  O               New line above, insert mode
+  v               Visual mode (select characters)
+  V               Visual line mode (select lines)
+  Ctrl + v        Visual block mode (select rectangle)
+  ESC / Ctrl+[    Return to normal mode
+  :               Command mode
+
+MOVEMENT
+--------------------------------------------------------------------------------
+  h/j/k/l         Left/down/up/right
+  w / W           Next word / WORD
+  b / B           Previous word / WORD
+  e / E           End of word / WORD
+  0               Beginning of line
+  ^               First non-blank character
+  $               End of line
+  gg              Go to first line
+  G               Go to last line
+  NUMBER + G      Go to line NUMBER
+  Ctrl + d        Half page down
+  Ctrl + u        Half page up
+  Ctrl + f        Full page down
+  Ctrl + b        Full page up
+  %               Jump to matching bracket
+  *               Search word under cursor (forward)
+  #               Search word under cursor (backward)
+
+EDITING
+--------------------------------------------------------------------------------
+  x               Delete character
+  dd              Delete line
+  D               Delete to end of line
+  cc              Change line (delete + insert)
+  C               Change to end of line
+  r               Replace single character
+  R               Replace mode (overwrite)
+  u               Undo
+  Ctrl + r        Redo
+  .               Repeat last command
+  >>              Indent line
+  <<              Unindent line
+  ==              Auto-indent line
+  J               Join lines
+
+COPY & PASTE (yank/put)
+--------------------------------------------------------------------------------
+  yy              Yank (copy) line
+  yw              Yank word
+  y$              Yank to end of line
+  "+y             Yank to system clipboard
+  p               Paste after cursor
+  P               Paste before cursor
+  "+p             Paste from system clipboard
+  dd              Cut line (delete = cut in vim)
+
+VISUAL MODE OPERATIONS
+--------------------------------------------------------------------------------
+  v + movement    Select text
+  V               Select lines
+  Ctrl + v        Select block
+  y               Yank selection
+  d               Delete selection
+  c               Change selection
+  >               Indent selection
+  <               Unindent selection
+  =               Auto-indent selection
+  u / U           Lowercase / uppercase selection
+
+SEARCH & REPLACE
+--------------------------------------------------------------------------------
+  /pattern        Search forward
+  ?pattern        Search backward
+  n / N           Next / previous match
+  :noh            Clear search highlight
+  :s/old/new      Replace first on line
+  :s/old/new/g    Replace all on line
+  :%s/old/new/g   Replace all in file
+  :%s/old/new/gc  Replace all with confirm
+
+FILES & BUFFERS
+--------------------------------------------------------------------------------
+  :w              Save
+  :w filename     Save as
+  :q              Quit
+  :q!             Quit without saving
+  :wq / :x / ZZ   Save and quit
+  :e filename     Edit file
+  :bn / :bp       Next / previous buffer
+  :ls             List buffers
+  :b NUMBER       Go to buffer NUMBER
+  :bd             Delete buffer (close file)
+
+SPLITS & WINDOWS
+--------------------------------------------------------------------------------
+  :sp / :vsp      Horizontal / vertical split
+  Ctrl + w, h/j/k/l   Navigate splits
+  Ctrl + w, =     Equal split sizes
+  Ctrl + w, _     Maximize height
+  Ctrl + w, |     Maximize width
+  Ctrl + w, q     Close split
+  Ctrl + w, o     Close all other splits
+
+USEFUL COMMANDS
+--------------------------------------------------------------------------------
+  :set paste      Paste mode (no auto-indent)
+  :set nopaste    Exit paste mode
+  :set nu / nonu  Show / hide line numbers
+  :syntax on/off  Syntax highlighting
+  gg=G            Auto-indent entire file
+  :r filename     Insert file contents
+  :r !command     Insert command output
+  :!command       Run shell command
+  :%!command      Filter file through command
+
+TEXT OBJECTS (use with d, c, y, v)
+--------------------------------------------------------------------------------
+  iw / aw         Inner word / a word (with space)
+  i" / a"         Inner quotes / with quotes
+  i( / a(         Inner parens / with parens
+  i{ / a{         Inner braces / with braces
+  it / at         Inner tag / with tag (HTML)
+  ip / ap         Inner paragraph / with blank lines
+
+EXAMPLES
+--------------------------------------------------------------------------------
+  ciw             Change inner word
+  di"             Delete inside quotes
+  ya{             Yank around braces
+  vip             Select inner paragraph
+  >ap             Indent paragraph
+  gUiw            Uppercase word
+  :%s/foo/bar/gc  Replace foo with bar, confirm each
+
+================================================================================
+  Press :help TOPIC in vim for detailed help on any topic
+================================================================================

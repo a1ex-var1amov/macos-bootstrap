@@ -1,0 +1,55 @@
+# Git configuration for terminal-config
+# Add to your ~/.gitconfig with:
+#   [include]
+#       path = ~/.config/git/gitconfig
+
+[core]
+    pager = delta
+
+[interactive]
+    diffFilter = delta --color-only
+
+[delta]
+    navigate = true
+    light = false
+    side-by-side = true
+    line-numbers = true
+    syntax-theme = Catppuccin-macchiato
+
+[merge]
+    conflictstyle = diff3
+
+[diff]
+    colorMoved = default
+
+[alias]
+    # Short status
+    s = status -sb
+    
+    # Pretty log
+    lg = log --oneline --graph --decorate --all
+    ll = log --pretty=format:'%C(yellow)%h%Creset %s %C(cyan)<%an>%Creset %C(green)(%cr)%Creset' --abbrev-commit
+    
+    # Show last commit
+    last = log -1 HEAD --stat
+    
+    # Undo last commit (keep changes)
+    undo = reset HEAD~1 --mixed
+    
+    # Amend without editing message
+    amend = commit --amend --no-edit
+    
+    # List branches by last modified
+    branches = for-each-ref --sort=-committerdate refs/heads/ --format='%(committerdate:short) %(refname:short)'
+    
+    # Show what I've done today
+    today = log --since=midnight --author='$(git config user.email)' --oneline
+    
+    # Diff staged changes
+    staged = diff --cached
+    
+    # Pull with rebase
+    pr = pull --rebase
+    
+    # Push and set upstream
+    pu = push -u origin HEAD

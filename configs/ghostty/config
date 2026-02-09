@@ -1,0 +1,160 @@
+# Ghostty Configuration
+# Location: ~/.config/ghostty/config
+
+# =============================================================================
+# SHELL INTEGRATION
+# =============================================================================
+shell-integration = zsh
+shell-integration-features = no-cursor,sudo
+
+# =============================================================================
+# FONT CONFIGURATION
+# =============================================================================
+# Use a good programming font (uncomment your preferred one)
+font-family = JetBrainsMono Nerd Font
+# font-family = FiraCode Nerd Font
+# font-family = Iosevka Nerd Font
+# font-family = MesloLGS NF
+font-size = 13
+font-thicken = false
+
+# Font features for ligatures (if your font supports them)
+font-feature = calt
+font-feature = liga
+
+# Adjust line height for readability (smaller = tighter)
+adjust-cell-height = 2
+
+# =============================================================================
+# CURSOR - Vim-friendly settings
+# =============================================================================
+cursor-style = block
+cursor-style-blink = false
+# Change cursor in different modes (works great with vim)
+cursor-color = #f5a97f
+cursor-text = #24273a
+
+# =============================================================================
+# MOUSE
+# =============================================================================
+mouse-hide-while-typing = true
+copy-on-select = clipboard
+focus-follows-mouse = false
+
+# =============================================================================
+# WINDOW
+# =============================================================================
+window-padding-x = 8
+window-padding-y = 8
+window-padding-balance = true
+window-decoration = true
+macos-titlebar-style = tabs
+window-save-state = always
+confirm-close-surface = false
+quit-after-last-window-closed = true
+
+# =============================================================================
+# SCROLLBACK
+# =============================================================================
+scrollback-limit = 100000
+
+# =============================================================================
+# CATPPUCCIN MACCHIATO THEME (matches your Starship palette)
+# =============================================================================
+background = #24273a
+foreground = #cad3f5
+selection-background = #5b6078
+selection-foreground = #cad3f5
+cursor-color = #f5a97f
+cursor-text = #24273a
+
+# Normal colors
+palette = 0=#494d64
+palette = 1=#ed8796
+palette = 2=#a6da95
+palette = 3=#eed49f
+palette = 4=#8aadf4
+palette = 5=#f5bde6
+palette = 6=#8bd5ca
+palette = 7=#b8c0e0
+
+# Bright colors
+palette = 8=#5b6078
+palette = 9=#ed8796
+palette = 10=#a6da95
+palette = 11=#eed49f
+palette = 12=#8aadf4
+palette = 13=#f5bde6
+palette = 14=#8bd5ca
+palette = 15=#a5adcb
+
+# =============================================================================
+# KEYBINDINGS
+# =============================================================================
+
+# Navigation keys - ensure proper escape sequences
+keybind = insert=text:\x1b[2~
+keybind = delete=text:\x1b[3~
+keybind = home=text:\x1b[H
+keybind = end=text:\x1b[F
+keybind = page_up=text:\x1b[5~
+keybind = page_down=text:\x1b[6~
+
+# With modifiers (Shift, Ctrl, Alt)
+keybind = shift+insert=paste_from_selection
+keybind = shift+page_up=scroll_page_up
+keybind = shift+page_down=scroll_page_down
+keybind = ctrl+home=text:\x1b[1;5H
+keybind = ctrl+end=text:\x1b[1;5F
+keybind = ctrl+page_up=text:\x1b[5;5~
+keybind = ctrl+page_down=text:\x1b[6;5~
+
+# Quick font size adjustment
+keybind = super+equal=increase_font_size:1
+keybind = super+minus=decrease_font_size:1
+keybind = super+zero=reset_font_size
+
+# Split navigation (tmux-like)
+keybind = super+d=new_split:right
+keybind = super+shift+d=new_split:down
+keybind = super+alt+left=goto_split:left
+keybind = super+alt+right=goto_split:right
+keybind = super+alt+up=goto_split:top
+keybind = super+alt+down=goto_split:bottom
+keybind = super+shift+enter=toggle_split_zoom
+
+# Tab management
+keybind = super+t=new_tab
+keybind = super+w=close_surface
+keybind = super+shift+left=previous_tab
+keybind = super+shift+right=next_tab
+
+# Quick actions
+keybind = super+k=clear_screen
+keybind = super+shift+c=copy_to_clipboard
+keybind = super+shift+v=paste_from_clipboard
+
+# =============================================================================
+# PERFORMANCE
+# =============================================================================
+# GPU acceleration (default, but explicit)
+# gtk-single-instance = true
+
+# =============================================================================
+# CLIPBOARD
+# =============================================================================
+clipboard-read = allow
+clipboard-write = allow
+clipboard-trim-trailing-spaces = true
+
+# =============================================================================
+# ADVANCED
+# =============================================================================
+# Bold text rendering
+bold-is-bright = false
+
+# Clickable links
+link-url = true
+
+# Bell - flash screen instead of sound
+desktop-notifications = false

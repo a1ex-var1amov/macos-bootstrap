@@ -1,0 +1,143 @@
+{
+  // ==========================================================================
+  // FONT - Match terminal (JetBrainsMono Nerd Font)
+  // ==========================================================================
+  "editor.fontFamily": "JetBrainsMono Nerd Font, Menlo, Monaco, 'Courier New', monospace",
+  "editor.fontSize": 13,
+  "editor.fontLigatures": true,
+  "editor.fontWeight": "400",
+  "terminal.integrated.fontFamily": "JetBrainsMono Nerd Font",
+  "terminal.integrated.fontSize": 12,
+
+  // ==========================================================================
+  // THEME - Catppuccin Macchiato (install extension: Catppuccin for VSCode)
+  // ==========================================================================
+  "workbench.colorTheme": "Catppuccin Macchiato",
+  "workbench.iconTheme": "catppuccin-macchiato",
+
+  // ==========================================================================
+  // EDITOR
+  // ==========================================================================
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": true,
+  "editor.wordWrap": "off",
+  "editor.minimap.enabled": false,
+  "editor.renderWhitespace": "selection",
+  "editor.rulers": [80],
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": true,
+  "editor.smoothScrolling": true,
+  "editor.cursorBlinking": "smooth",
+  "editor.cursorSmoothCaretAnimation": "on",
+  "editor.linkedEditing": true,
+  "editor.stickyScroll.enabled": true,
+  "editor.inlineSuggest.enabled": true,
+
+  // ==========================================================================
+  // FORMATTING
+  // ==========================================================================
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": false,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+
+  // ==========================================================================
+  // TERMINAL
+  // ==========================================================================
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.scrollback": 10000,
+  "terminal.integrated.copyOnSelection": true,
+  "terminal.integrated.cursorStyle": "block",
+  "terminal.integrated.cursorBlinking": false,
+  "terminal.integrated.env.osx": {
+    "TERM_PROGRAM": "cursor"
+  },
+
+  // ==========================================================================
+  // FILES
+  // ==========================================================================
+  "files.autoSave": "onFocusChange",
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/node_modules": true,
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/*.pyc": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/*.code-search": true,
+    "**/vendor": true
+  },
+
+  // ==========================================================================
+  // GIT
+  // ==========================================================================
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "git.enableSmartCommit": true,
+  "git.openRepositoryInParentFolders": "always",
+  "diffEditor.ignoreTrimWhitespace": false,
+
+  // ==========================================================================
+  // WORKBENCH
+  // ==========================================================================
+  "workbench.startupEditor": "none",
+  "workbench.editor.enablePreview": false,
+  "workbench.editor.showTabs": "multiple",
+  "workbench.tree.indent": 16,
+  "workbench.sideBar.location": "left",
+  "breadcrumbs.enabled": true,
+  "explorer.confirmDelete": false,
+  "explorer.confirmDragAndDrop": false,
+
+  // ==========================================================================
+  // LANGUAGE SPECIFIC
+  // ==========================================================================
+  "[python]": {
+    "editor.tabSize": 4,
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  },
+  "[go]": {
+    "editor.tabSize": 4,
+    "editor.insertSpaces": false,
+    "editor.formatOnSave": true
+  },
+  "[yaml]": {
+    "editor.tabSize": 2,
+    "editor.autoIndent": "full"
+  },
+  "[json]": {
+    "editor.tabSize": 2,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[markdown]": {
+    "editor.wordWrap": "on",
+    "editor.quickSuggestions": {
+      "other": false,
+      "comments": false,
+      "strings": false
+    }
+  },
+
+  // ==========================================================================
+  // VIM EXTENSION (if you use it)
+  // ==========================================================================
+  "vim.enable": false,
+  "vim.leader": "<space>",
+  "vim.hlsearch": true,
+  "vim.useSystemClipboard": true,
+  "vim.handleKeys": {
+    "<C-a>": false,
+    "<C-f>": false,
+    "<C-c>": false,
+    "<C-v>": false,
+    "<C-x>": false
+  }
+}

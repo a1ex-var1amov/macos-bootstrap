@@ -1,0 +1,235 @@
+" Vim configuration optimized for Ghostty terminal
+" Location: ~/.vimrc
+
+" =============================================================================
+" ESSENTIAL SETTINGS
+" =============================================================================
+set nocompatible              " Use Vim defaults (not vi)
+filetype plugin indent on     " Enable filetype detection
+syntax enable                 " Enable syntax highlighting
+
+" =============================================================================
+" ESCAPE KEY FIX - Critical for terminal vim
+" =============================================================================
+" Reduce timeout for key sequences (faster ESC response)
+set ttimeout
+set ttimeoutlen=10            " Very short timeout for terminal escape sequences
+set timeoutlen=500            " Normal timeout for mappings
+
+" Alternative escape mappings (Ctrl+[ already works natively)
+" Additional mappings if ESC key is being captured by another app
+inoremap jk <Esc>
+inoremap jj <Esc>
+
+" Ensure terminal sends proper escape codes
+if &term =~ 'ghostty\|xterm\|256color'
+  " Fix cursor shape in different modes
+  let &t_SI = "\e[6 q"        " INSERT mode: beam cursor
+  let &t_SR = "\e[4 q"        " REPLACE mode: underline cursor
+  let &t_EI = "\e[2 q"        " NORMAL mode: block cursor
+
+  " Enable true color support
+  if has('termguicolors')
+    set termguicolors
+  endif
+endif
+
+" =============================================================================
+" APPEARANCE
+" =============================================================================
+set number                    " Show line numbers
+set relativenumber            " Relative line numbers
+set cursorline                " Highlight current line
+set showmatch                 " Show matching brackets
+set scrolloff=8               " Keep 8 lines above/below cursor
+set sidescrolloff=8           " Keep 8 columns left/right of cursor
+set signcolumn=yes            " Always show sign column
+set colorcolumn=80            " Line length guide at 80
+highlight ColorColumn ctermbg=234 guibg=#1e2030  " Very subtle, dark
+set laststatus=2              " Always show status line
+set showcmd                   " Show partial commands
+set showmode                  " Show current mode
+set ruler                     " Show cursor position
+set wildmenu                  " Enhanced command-line completion
+set wildmode=longest:full,full
+
+" =============================================================================
+" CATPPUCCIN MACCHIATO COLORS (matches Ghostty/Starship)
+" =============================================================================
+set background=dark
+
+" Basic color overrides for terminal vim
+highlight Normal       ctermfg=254  ctermbg=235
+highlight CursorLine   ctermbg=237  cterm=NONE
+highlight CursorLineNr ctermfg=208  ctermbg=237  cterm=bold
+highlight LineNr       ctermfg=243
+highlight Visual       ctermbg=240
+highlight StatusLine   ctermfg=254  ctermbg=238  cterm=bold
+highlight StatusLineNC ctermfg=243  ctermbg=237
+highlight Comment      ctermfg=243  cterm=italic
+highlight Search       ctermfg=235  ctermbg=221
+highlight IncSearch    ctermfg=235  ctermbg=208
+
+" =============================================================================
+" SEARCH
+" =============================================================================
+set incsearch                 " Incremental search
+set hlsearch                  " Highlight search results
+set ignorecase                " Case-insensitive search
+set smartcase                 " Case-sensitive if uppercase present
+
+" Clear search highlighting with ESC
+nnoremap <silent> <Esc> :nohlsearch<CR><Esc>
+
+" =============================================================================
+" INDENTATION
+" =============================================================================
+set autoindent                " Auto-indent new lines
+set smartindent               " Smart indentation
+set expandtab                 " Use spaces instead of tabs
+set tabstop=2                 " Tab width
+set shiftwidth=2              " Indent width
+set softtabstop=2             " Soft tab width
+set shiftround                " Round indent to multiple of shiftwidth
+
+" =============================================================================
+" FILES & BUFFERS
+" =============================================================================
+set encoding=utf-8            " UTF-8 encoding
+set fileencoding=utf-8        " File encoding
+set hidden                    " Allow hidden buffers
+set autoread                  " Auto-reload changed files
+set nobackup                  " Disable backup files
+set nowritebackup             " Disable write backup
+set noswapfile                " Disable swap files
+set undofile                  " Persistent undo
+set undodir=~/.vim/undo       " Undo directory
+
+" Create undo directory if it doesn't exist
+if !isdirectory(expand('~/.vim/undo'))
+  call mkdir(expand('~/.vim/undo'), 'p', 0700)
+endif
+
+" =============================================================================
+" EDITING
+" =============================================================================
+set backspace=indent,eol,start  " Backspace behavior
+set mouse=a                   " Enable mouse support
+set clipboard=unnamed         " Use system clipboard (macOS)
+set splitbelow                " Horizontal splits below
+set splitright                " Vertical splits right
+set wrap                      " Wrap long lines
+set linebreak                 " Wrap at word boundaries
+
+" =============================================================================
+" KEY MAPPINGS
+" =============================================================================
+" Leader key
+let mapleader = " "
+let maplocalleader = " "
+
+" Quick save
+nnoremap <leader>w :w<CR>
+
+" Quick quit
+nnoremap <leader>q :q<CR>
+
+" Better window navigation
+nnoremap <C-h> <C-w>h
+nnoremap <C-j> <C-w>j
+nnoremap <C-k> <C-w>k
+nnoremap <C-l> <C-w>l
+
+" Move lines up/down
+nnoremap <A-j> :m .+1<CR>==
+nnoremap <A-k> :m .-2<CR>==
+vnoremap <A-j> :m '>+1<CR>gv=gv
+vnoremap <A-k> :m '<-2<CR>gv=gv
+
+" Better indenting (stay in visual mode)
+vnoremap < <gv
+vnoremap > >gv
+
+" Quick buffer navigation
+nnoremap <leader>bn :bnext<CR>
+nnoremap <leader>bp :bprevious<CR>
+nnoremap <leader>bd :bdelete<CR>
+
+" Toggle line numbers for mouse copying (Leader + n)
+nnoremap <leader>n :set nu! rnu!<CR>
+
+" Copy mode: disable line numbers + mouse for clean terminal copy
+nnoremap <leader>c :set nonu nornu mouse=<CR>:echo "Copy mode ON - select with mouse"<CR>
+nnoremap <leader>C :set nu rnu mouse=a<CR>:echo "Copy mode OFF"<CR>
+
+" Quick split
+nnoremap <leader>v :vsplit<CR>
+nnoremap <leader>s :split<CR>
+
+" =============================================================================
+" STATUS LINE
+" =============================================================================
+set statusline=
+set statusline+=%#PmenuSel#
+set statusline+=\ %{mode()}\ 
+set statusline+=%#LineNr#
+set statusline+=\ %f
+set statusline+=%m
+set statusline+=%=
+set statusline+=%#CursorColumn#
+set statusline+=\ %y
+set statusline+=\ %{&fileencoding?&fileencoding:&encoding}
+set statusline+=\ %p%%
+set statusline+=\ %l:%c
+set statusline+=\ 
+
+" =============================================================================
+" FILETYPE SPECIFIC
+" =============================================================================
+augroup filetypes
+  autocmd!
+  autocmd FileType yaml setlocal ts=2 sts=2 sw=2 expandtab
+  autocmd FileType json setlocal ts=2 sts=2 sw=2 expandtab
+  autocmd FileType python setlocal ts=4 sts=4 sw=4 expandtab
+  autocmd FileType go setlocal ts=4 sts=4 sw=4 noexpandtab
+  autocmd FileType make setlocal ts=4 sts=4 sw=4 noexpandtab
+  autocmd FileType sh setlocal ts=2 sts=2 sw=2 expandtab
+  autocmd FileType markdown setlocal wrap linebreak
+augroup END
+
+" =============================================================================
+" NAVIGATION KEYS (Insert, Delete, Home, End, PageUp, PageDown)
+" =============================================================================
+" Ensure terminal sends correct sequences (for Ghostty and others)
+if &term =~ 'ghostty\|xterm\|256color'
+  " Home/End
+  map  <Esc>[H  <Home>
+  imap <Esc>[H  <Home>
+  map  <Esc>[F  <End>
+  imap <Esc>[F  <End>
+  
+  " Insert/Delete
+  map  <Esc>[2~ <Insert>
+  imap <Esc>[2~ <Insert>
+  map  <Esc>[3~ <Delete>
+  imap <Esc>[3~ <Delete>
+  
+  " Page Up/Down
+  map  <Esc>[5~ <PageUp>
+  imap <Esc>[5~ <PageUp>
+  map  <Esc>[6~ <PageDown>
+  imap <Esc>[6~ <PageDown>
+  
+  " Ctrl+Home/End (go to start/end of file)
+  map  <Esc>[1;5H gg
+  imap <Esc>[1;5H <C-o>gg
+  map  <Esc>[1;5F G
+  imap <Esc>[1;5F <C-o>G
+endif
+
+" =============================================================================
+" PERFORMANCE
+" =============================================================================
+set lazyredraw                " Don't redraw during macros
+set updatetime=250            " Faster completion
+set ttyfast                   " Faster terminal connection

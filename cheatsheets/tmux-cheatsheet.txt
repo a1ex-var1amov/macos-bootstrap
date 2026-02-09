@@ -1,0 +1,79 @@
+================================================================================
+                           TMUX CHEAT SHEET
+================================================================================
+  Prefix = Ctrl+b (press first, then the key)
+================================================================================
+
+SHELL ALIASES (custom)
+--------------------------------------------------------------------------------
+  ts                Smart session: auto-name from folder + k8s context
+  ts NAME           Create/attach to session "NAME"
+  tsp               Pick session with fzf (interactive)
+  tls               List all sessions
+  tks NAME          Kill session "NAME"
+  tka               Kill ALL sessions (careful!)
+  th / tmux-help    Show this cheatsheet
+  vh / vim-help     Show vim cheatsheet
+
+SESSIONS
+--------------------------------------------------------------------------------
+  Prefix + s        Session picker (interactive)
+  Prefix + w        Window/session tree picker
+  Prefix + (        Previous session
+  Prefix + )        Next session
+  Prefix + $        Rename session
+  Prefix + d        Detach from tmux
+  tmux ls           List sessions (from shell)
+  tmux new -s NAME  New named session
+  tmux attach -t X  Attach to session X
+  tmux kill-ses -t  Kill session
+
+WINDOWS (tabs)
+--------------------------------------------------------------------------------
+  Prefix + c        New window
+  Prefix + ,        Rename window
+  Prefix + &        Kill window
+  Prefix + n        Next window
+  Prefix + p        Previous window
+  Prefix + NUMBER   Go to window NUMBER
+  Alt + 1-5         Go to window 1-5 (no prefix)
+
+PANES (splits)
+--------------------------------------------------------------------------------
+  Prefix + |        Split vertical      (custom)
+  Prefix + -        Split horizontal    (custom)
+  Prefix + x        Kill pane
+  Prefix + z        Toggle pane zoom (fullscreen)
+  Prefix + !        Convert pane to window
+  Prefix + q        Show pane numbers (press # to jump)
+  Prefix + {        Move pane left
+  Prefix + }        Move pane right
+  Prefix + Space    Cycle layouts
+
+PANE NAVIGATION
+--------------------------------------------------------------------------------
+  Prefix + h/j/k/l  Navigate panes (vim-style, custom)
+  Alt + arrows      Navigate panes (no prefix, custom)
+  Prefix + o        Next pane
+  Ctrl+Alt+arrows   Resize pane (custom)
+
+COPY MODE (vi-style)
+--------------------------------------------------------------------------------
+  Prefix + [        Enter copy mode
+  q                 Exit copy mode
+  v                 Start selection
+  y                 Copy selection
+  /                 Search forward
+  ?                 Search backward
+  n / N             Next/prev search result
+
+MISC
+--------------------------------------------------------------------------------
+  Prefix + r        Reload config (custom)
+  Prefix + t        Show clock
+  Prefix + :        Command prompt
+  Prefix + ?        Show all keybindings
+
+================================================================================
+  Custom bindings are marked with (custom) - from your tmux.conf
+================================================================================
