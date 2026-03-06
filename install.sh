@@ -58,7 +58,7 @@ if [[ "$(uname)" == "Darwin" ]]; then
 fi
 
 # Check for required tools
-for cmd in git zsh vim tmux; do
+for cmd in git zsh tmux; do
     if ! command_exists "$cmd"; then
         MISSING_DEPS+=("$cmd")
     fi
@@ -66,7 +66,7 @@ done
 
 # Check for optional but recommended tools
 OPTIONAL_CORE=()
-for cmd in starship fzf zoxide; do
+for cmd in nvim vim starship fzf zoxide; do
     if ! command_exists "$cmd"; then
         OPTIONAL_CORE+=("$cmd")
     fi
@@ -206,6 +206,7 @@ echo ""
 print_status "Creating directories..."
 
 mkdir -p ~/.config/ghostty
+mkdir -p ~/.config/nvim
 mkdir -p ~/.config
 mkdir -p ~/.vim/undo
 mkdir -p ~/.zsh/themes
@@ -251,7 +252,12 @@ else
     print_success "Starship config installed"
 fi
 
-# Vim
+# Neovim
+backup_file ~/.config/nvim/init.lua
+cp "$SCRIPT_DIR/configs/nvim/init.lua" ~/.config/nvim/init.lua
+print_success "Neovim config installed (run 'nvim' once to auto-install plugins)"
+
+# Vim (fallback)
 backup_file ~/.vimrc
 cp "$SCRIPT_DIR/configs/vim/vimrc" ~/.vimrc
 print_success "Vim config installed"
@@ -302,7 +308,8 @@ echo ""
 echo "Next steps:"
 echo "  1. Restart Ghostty (or press Cmd+Shift+, to reload)"
 echo "  2. Reload your shell: source ~/.zshrc"
-echo "  3. Try the cheatsheets: th (tmux) or vh (vim)"
+echo "  3. Run 'nvim' once — lazy.nvim will auto-install Catppuccin + Treesitter"
+echo "  4. Try the cheatsheets: th (tmux) or vh (vim)"
 echo ""
 echo "Useful commands:"
 echo "  ts          - Smart tmux session (auto-named)"

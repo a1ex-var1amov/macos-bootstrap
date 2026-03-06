@@ -43,7 +43,7 @@
     branches = for-each-ref --sort=-committerdate refs/heads/ --format='%(committerdate:short) %(refname:short)'
     
     # Show what I've done today
-    today = log --since=midnight --author='$(git config user.email)' --oneline
+    today = !git log --since=midnight --author="$(git config user.email)" --oneline
     
     # Diff staged changes
     staged = diff --cached

@@ -64,17 +64,6 @@ disabled = false
 symbol = "⎈"
 format = '[$symbol](blue) [$context](bold cyan)[:$namespace]($style) '
 
-[username]
-show_always = true
-format = "[$user]($style)"
-style_user = "bold cyan"
-style_root = "bold red"
-
-[hostname]
-ssh_only = false
-format = "[㉿$hostname]($style)"
-style = "bold cyan"
-
 [[kubernetes.contexts]]
 context_pattern = "arn:aws:eks:.*:cluster/(?P<cluster>[\\w-]+)"
 context_alias = "$cluster"

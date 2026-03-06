@@ -38,7 +38,6 @@ endif
 " APPEARANCE
 " =============================================================================
 set number                    " Show line numbers
-set relativenumber            " Relative line numbers
 set cursorline                " Highlight current line
 set showmatch                 " Show matching brackets
 set scrolloff=8               " Keep 8 lines above/below cursor
@@ -156,11 +155,11 @@ nnoremap <leader>bp :bprevious<CR>
 nnoremap <leader>bd :bdelete<CR>
 
 " Toggle line numbers for mouse copying (Leader + n)
-nnoremap <leader>n :set nu! rnu!<CR>
+nnoremap <leader>n :set nu!<CR>
 
 " Copy mode: disable line numbers + mouse for clean terminal copy
-nnoremap <leader>c :set nonu nornu mouse=<CR>:echo "Copy mode ON - select with mouse"<CR>
-nnoremap <leader>C :set nu rnu mouse=a<CR>:echo "Copy mode OFF"<CR>
+nnoremap <leader>c :set nonu mouse=<CR>:echo "Copy mode ON - select with mouse"<CR>
+nnoremap <leader>C :set nu mouse=a<CR>:echo "Copy mode OFF"<CR>
 
 " Quick split
 nnoremap <leader>v :vsplit<CR>
@@ -232,4 +231,3 @@ endif
 " =============================================================================
 set lazyredraw                " Don't redraw during macros
 set updatetime=250            " Faster completion
-set ttyfast                   " Faster terminal connection

@@ -3,11 +3,11 @@
   // FONT - Match terminal (JetBrainsMono Nerd Font)
   // ==========================================================================
   "editor.fontFamily": "JetBrainsMono Nerd Font, Menlo, Monaco, 'Courier New', monospace",
-  "editor.fontSize": 13,
+  "editor.fontSize": 14,
   "editor.fontLigatures": true,
   "editor.fontWeight": "400",
   "terminal.integrated.fontFamily": "JetBrainsMono Nerd Font",
-  "terminal.integrated.fontSize": 12,
+  "terminal.integrated.fontSize": 13,
 
   // ==========================================================================
   // THEME - Catppuccin Macchiato (install extension: Catppuccin for VSCode)

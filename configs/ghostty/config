@@ -15,8 +15,8 @@ font-family = JetBrainsMono Nerd Font
 # font-family = FiraCode Nerd Font
 # font-family = Iosevka Nerd Font
 # font-family = MesloLGS NF
-font-size = 13
-font-thicken = false
+font-size = 14
+font-thicken = true
 
 # Font features for ligatures (if your font supports them)
 font-feature = calt
@@ -31,8 +31,7 @@ adjust-cell-height = 2
 cursor-style = block
 cursor-style-blink = false
 # Change cursor in different modes (works great with vim)
-cursor-color = #f5a97f
-cursor-text = #24273a
+# Note: cursor-color and cursor-text are set in the theme section below
 
 # =============================================================================
 # MOUSE

@@ -168,8 +168,8 @@ bindkey '^[[1;2D' backward-word              # Shift+Left
 alias ..="cd .."
 alias ...="cd ../.."
 alias ....="cd ../../.."
-alias ~="cd ~"
 alias -- -="cd -"
+alias home="cd ~"
 alias work="cd ~/workdir"
 
 # Listing (eza if available, fallback to ls)
@@ -250,9 +250,14 @@ if (( $+commands[stern] )); then
 fi
 
 # Editors
-alias vi="vim"
-alias vim="vim"
-alias edit="vim"
+if (( $+commands[nvim] )); then
+  alias vi="nvim"
+  alias vim="nvim"
+  alias edit="nvim"
+else
+  alias vi="vim"
+  alias edit="vim"
+fi
 
 # Kubernetes
 alias k=kubectl
@@ -279,8 +284,9 @@ alias gco="git checkout"
 alias glog="git log --oneline --graph --decorate"
 
 # System
-alias df="df -h"
-alias du="du -h"
+# Note: df/du are already aliased to duf/dust above if those tools are installed
+(( ! $+aliases[df] )) && alias df="df -h"
+(( ! $+aliases[du] )) && alias du="du -h"
 alias free="top -l 1 | head -n 10 | grep PhysMem"  # macOS memory info
 alias ports="lsof -i -P -n | grep LISTEN"          # show listening ports
 
@@ -292,7 +298,7 @@ alias kpk="k8pk"
 
 # Misc
 alias reload="source ~/.zshrc"
-alias path="echo $PATH | tr ':' '\n'"
+alias path='echo $PATH | tr ":" "\n"'
 alias now="date '+%Y-%m-%d %H:%M:%S'"
 
 # Cheat sheets
@@ -376,10 +382,10 @@ extract() {
 }
 
 # Find files by name (case-insensitive)
-ff() { find . -type f -iname "*$1*" }
+ff() { command find . -type f -iname "*$1*" }
 
 # Find directories by name (case-insensitive)
-fdir() { find . -type d -iname "*$1*" }
+fdir() { command find . -type d -iname "*$1*" }
 
 # Quick search in history
 h() { history | grep "$1" }
@@ -388,8 +394,13 @@ h() { history | grep "$1" }
 topcmd() { history | awk '{print $2}' | sort | uniq -c | sort -rn | head -10 }
 
 # --- Environment variables ---
-export EDITOR="vim"
-export VISUAL="vim"
+if (( $+commands[nvim] )); then
+  export EDITOR="nvim"
+  export VISUAL="nvim"
+else
+  export EDITOR="vim"
+  export VISUAL="vim"
+fi
 export PAGER="less"
 export LESS="-R"
 
@@ -554,13 +565,6 @@ autoload -Uz add-zsh-hook
 add-zsh-hook preexec _set_title_preexec
 
 # --- History: Save on exit ---
-# Ensure history is saved when shell exits
-zshaddhistory() {
-  # This function is called before each command is added to history
-  # Return 0 to add, 1 to skip
-  return 0
-}
-
 # Ghostty integration is now loaded early in the file (see top)
 
 # Save history on exit
