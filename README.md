@@ -24,8 +24,8 @@ Everything is themed with **Catppuccin Frappé** — terminal, prompt, tmux, del
 ## Quick Start
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/dotfiles.git
-cd dotfiles
+git clone https://github.com/a1ex-var1amov/macos-bootstrap.git
+cd macos-bootstrap
 ./install.sh
 ```
 
