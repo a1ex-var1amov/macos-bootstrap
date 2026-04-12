@@ -1,10 +1,27 @@
-# Git configuration for terminal-config
-# Add to your ~/.gitconfig with:
-#   [include]
-#       path = ~/.config/git/gitconfig
+# Git configuration — delta, sane globals, and aliases
+# Wired up automatically by install.sh via [include] in ~/.gitconfig
+
+# =============================================================================
+# SANE GLOBALS
+# =============================================================================
+[init]
+    defaultBranch = main
+
+[pull]
+    rebase = true
+
+[push]
+    autoSetupRemote = true
+
+[fetch]
+    prune = true           # auto-delete local refs for deleted remote branches
+
+[rebase]
+    autoStash = true       # stash dirty working tree before rebase, pop after
 
 [core]
-    pager = delta
+    pager        = delta
+    excludesFile = ~/.gitignore_global
 
 [interactive]
     diffFilter = delta --color-only
@@ -14,7 +31,7 @@
     light = false
     side-by-side = true
     line-numbers = true
-    syntax-theme = Catppuccin-macchiato
+    syntax-theme = Catppuccin-frappe
 
 [merge]
     conflictstyle = diff3

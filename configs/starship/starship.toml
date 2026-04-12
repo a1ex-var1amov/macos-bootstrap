@@ -11,7 +11,7 @@ command_timeout = 200    # ms for git, kubectl, etc.; bails sooner so prompt sta
 format = '┌──\[ $directory\] $git_branch$git_status$kubernetes$python$golang$nodejs$cmd_duration$line_break└─$character'
 right_format = "$time$jobs$status$localip"
 
-palette = 'catppuccin_macchiato'
+palette = 'catppuccin_frappe'
 
 [directory]
 style = "blue"
@@ -77,28 +77,23 @@ context_pattern = "kubernetes-admin@(?P<cluster>.+)"
 context_alias = "$cluster"
 
 [[kubernetes.contexts]]
-context_pattern = "(?P<cluster>sc-k8s-[\\w-]+)"
-context_alias = "$cluster"
-
-[[kubernetes.contexts]]
 context_pattern = "docker-desktop"
 context_alias = "docker"
 
-# OpenShift/OCP context: .../api-CLUSTER-nvparkosdev-nvidia-com:port/...
-# Extract everything between api- and -nvpark
+# OpenShift / OCP — slash-style API URL: .../api-CLUSTER-domain-com:port/...
 [[kubernetes.contexts]]
-context_pattern = ".*/api-(?P<cluster>[\\w-]+)-nvpark[\\w-]*:\\d+/.*"
+context_pattern = ".*/api-(?P<cluster>[\\w-]+)-[\\w]+-[\\w]+:\\d+/.*"
 context_alias = "$cluster"
 
-# OpenShift/OCP: .../api-CLUSTER-nvidia-com:port/...
-[[kubernetes.contexts]]
-context_pattern = ".*/api-(?P<cluster>[\\w-]+)-nvidia-[\\w-]*:\\d+/.*"
-context_alias = "$cluster"
-
-# OpenShift API URLs with dots: api.CLUSTER.domain.com:port -> CLUSTER
+# OpenShift / OCP — dot-style API URL: api.CLUSTER.domain.com:port
 [[kubernetes.contexts]]
 context_pattern = "api\\.(?P<cluster>[^.]+)\\..+"
 context_alias = "$cluster"
+
+# Add your organisation-specific patterns here, e.g.:
+# [[kubernetes.contexts]]
+# context_pattern = "(?P<cluster>my-company-[\\w-]+)"
+# context_alias = "$cluster"
 
 [localip]
 ssh_only = true  # faster and less noisy locally
@@ -145,30 +140,30 @@ symbol = "⬢ "
 detect_files = ["package.json", ".node-version"]
 detect_folders = ["node_modules"]
 
-[palettes.catppuccin_macchiato]
-rosewater = "#f4dbd6"
-flamingo = "#f0c6c6"
-pink = "#f5bde6"
-mauve = "#c6a0f6"
-red = "#ed8796"
-maroon = "#ee99a0"
-peach = "#f5a97f"
-yellow = "#eed49f"
-green = "#a6da95"
-teal = "#8bd5ca"
-sky = "#91d7e3"
-sapphire = "#7dc4e4"
-blue = "#8aadf4"
-lavender = "#b7bdf8"
-text = "#cad3f5"
-subtext1 = "#b8c0e0"
-subtext0 = "#a5adcb"
-overlay2 = "#939ab7"
-overlay1 = "#8087a2"
-overlay0 = "#6e738d"
-surface2 = "#5b6078"
-surface1 = "#494d64"
-surface0 = "#363a4f"
-base = "#24273a"
-mantle = "#1e2030"
-crust = "#181926"
+[palettes.catppuccin_frappe]
+rosewater = "#f2d5cf"
+flamingo = "#eebebe"
+pink = "#f4b8e4"
+mauve = "#ca9ee6"
+red = "#e78284"
+maroon = "#ea999c"
+peach = "#ef9f76"
+yellow = "#e5c890"
+green = "#a6d189"
+teal = "#81c8be"
+sky = "#99d1db"
+sapphire = "#85c1dc"
+blue = "#8caaee"
+lavender = "#babbf1"
+text = "#c6d0f5"
+subtext1 = "#b5bfe2"
+subtext0 = "#a5adce"
+overlay2 = "#949cbb"
+overlay1 = "#838ba7"
+overlay0 = "#737994"
+surface2 = "#626880"
+surface1 = "#51576d"
+surface0 = "#414559"
+base = "#303446"
+mantle = "#292c3c"
+crust = "#232634"

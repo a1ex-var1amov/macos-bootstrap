@@ -62,9 +62,6 @@
   "terminal.integrated.copyOnSelection": true,
   "terminal.integrated.cursorStyle": "block",
   "terminal.integrated.cursorBlinking": false,
-  "terminal.integrated.env.osx": {
-    "TERM_PROGRAM": "cursor"
-  },
 
   // ==========================================================================
   // FILES

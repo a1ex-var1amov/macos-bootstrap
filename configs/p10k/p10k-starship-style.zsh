@@ -6,7 +6,7 @@
 #   Right:  (only background_jobs visible; time/status disabled in Starship)
 #
 # All segments: transparent background, colored text only (lean style).
-# Colors use ANSI 0-15 so they match whatever Ghostty/terminal theme is active (Catppuccin Macchiato).
+# Colors use ANSI 0-15 so they match whatever Ghostty/terminal theme is active (Catppuccin Frappé).
 #
 # Sources the official p10k lean config for the git formatter and sane defaults,
 # then overrides everything that differs from Starship.
@@ -80,9 +80,9 @@ typeset -g POWERLEVEL9K_{LEFT,RIGHT}_SEGMENT_SEPARATOR=                # no powe
 # ============================================================================
 # Segment styles -- ANSI colors 0-15 to match terminal theme
 # ============================================================================
-# ANSI color reference (Catppuccin Macchiato in Ghostty):
-#   1=red  2=green  3=yellow  4=blue  6=cyan  8=bright-black(grey)
-#  10=bright-green  14=bright-cyan  15=bright-white(text)
+# ANSI color reference (Catppuccin Frappé in Ghostty):
+#   1=red  2=green  3=yellow  4=blue  6=teal  8=surface1(grey)
+#  10=bright-green  14=bright-teal  15=text
 
 # --- prompt_char: Starship success=[\\$](bold)  error=[\\$](bold red) ---
 # "bold" alone = bold + default foreground. p10k needs a color, use 15 (text/bright-white).

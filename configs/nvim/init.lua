@@ -88,15 +88,15 @@ opt.lazyredraw  = true
 require("lazy").setup({
 
   -- -------------------------------------------------------------------------
-  -- Catppuccin Macchiato (matches Ghostty / tmux / starship / delta)
+  -- Catppuccin Frappé (matches Ghostty / tmux / starship / delta)
   -- -------------------------------------------------------------------------
   {
     "catppuccin/nvim",
     name     = "catppuccin",
     priority = 1000,
     opts = {
-      flavour    = "macchiato",
-      background = { light = "latte", dark = "macchiato" },
+      flavour    = "frappe",
+      background = { light = "latte", dark = "frappe" },
       integrations = {
         treesitter = true,
       },

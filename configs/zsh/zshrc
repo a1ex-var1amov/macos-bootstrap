@@ -86,24 +86,29 @@ path=("${KREW_ROOT:-$HOME/.krew}/bin" "$HOME/.local/bin" $path)
 export PATH
 
 # --- Plugins (guarded). Keep ONLY ONE highlighter; fast is, well, faster. ---
+# Resolve Homebrew prefix once (works on both Apple Silicon and Intel)
+_BREW_PREFIX="${HOMEBREW_PREFIX:-}"
+if [[ -z "$_BREW_PREFIX" ]]; then
+  _BREW_PREFIX="$([[ -d /opt/homebrew ]] && echo /opt/homebrew || echo /usr/local)"
+fi
+
 # zsh-autosuggestions
-[[ -r /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]] && \
-  source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+[[ -r "$_BREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ]] && \
+  source "$_BREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
 
 # zsh-fast-syntax-highlighting (load AFTER completion & autosuggestions)
-[[ -r /opt/homebrew/opt/zsh-fast-syntax-highlighting/share/zsh-fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh ]] && \
-  source /opt/homebrew/opt/zsh-fast-syntax-highlighting/share/zsh-fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
-
-# If you prefer the regular highlighter, comment out the fast one above and use this instead (but not both):
-# [[ -r /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]] && \
-#   source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+[[ -r "$_BREW_PREFIX/opt/zsh-fast-syntax-highlighting/share/zsh-fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh" ]] && \
+  source "$_BREW_PREFIX/opt/zsh-fast-syntax-highlighting/share/zsh-fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh"
 
 # zoxide (smart cd)
 (( $+commands[zoxide] )) && eval "$(zoxide init zsh)"
 
 # fzf (fuzzy finder): key bindings and completion
-[[ -r /opt/homebrew/opt/fzf/shell/key-bindings.zsh ]] && source /opt/homebrew/opt/fzf/shell/key-bindings.zsh
-[[ -r /opt/homebrew/opt/fzf/shell/completion.zsh    ]] && source /opt/homebrew/opt/fzf/shell/completion.zsh
+[[ -r "$_BREW_PREFIX/opt/fzf/shell/key-bindings.zsh" ]] && source "$_BREW_PREFIX/opt/fzf/shell/key-bindings.zsh"
+[[ -r "$_BREW_PREFIX/opt/fzf/shell/completion.zsh"   ]] && source "$_BREW_PREFIX/opt/fzf/shell/completion.zsh"
+
+# fnm (Node.js version manager) — sets up PATH + auto-switches version per .nvmrc/.node-version
+(( $+commands[fnm] )) && eval "$(fnm env --use-on-cd --shell zsh)"
 
 # --- Completion styling ---
 zstyle ':completion:*' menu select                              # enable selection menu
@@ -130,6 +135,14 @@ fc -R "$HISTFILE" 2>/dev/null || true
 if [[ -r "${HOME}/.zsh/plugins/fzf-tab/fzf-tab.plugin.zsh" ]]; then
   source "${HOME}/.zsh/plugins/fzf-tab/fzf-tab.plugin.zsh"
 fi
+
+# atuin — supercharged shell history
+# Replaces Ctrl+R with a fuzzy TUI showing timestamps, duration, exit codes.
+# Works identically in every tmux pane/window and plain terminals — all share
+# one SQLite database, so history is always complete regardless of where you
+# typed a command. Up-arrow keeps default per-session behaviour.
+# First-time setup: `atuin register` (or `atuin login` on a second machine).
+(( $+commands[atuin] )) && eval "$(atuin init zsh --disable-up-arrow)"
 
 # --- Optional: vi-mode to leverage Starship's vimcmd_symbol ---
 # bindkey -v
@@ -235,6 +248,19 @@ if (( $+commands[lazydocker] )); then
   alias ld="lazydocker"
 fi
 
+# Podman — Docker-compatible CLI (daemonless, rootless, OpenShift-native)
+# Expose the Podman socket as DOCKER_HOST so lazydocker and other Docker-API
+# tools (docker-compose, VS Code DevContainers, etc.) work without changes.
+if (( $+commands[podman] )); then
+  alias docker="podman"
+  alias docker-compose="podman-compose"
+  # Podman socket path on macOS (used by lazydocker, DevContainers, etc.)
+  # podman machine inspect gives the real path; fall back to the default location.
+  _PODMAN_SOCK="$HOME/.local/share/containers/podman/machine/qemu/podman.sock"
+  [[ -S "$_PODMAN_SOCK" ]] && export DOCKER_HOST="unix://$_PODMAN_SOCK"
+  unset _PODMAN_SOCK
+fi
+
 # Kubernetes tools
 if (( $+commands[k9s] )); then
   alias kk="k9s"  # quick k9s
@@ -269,8 +295,9 @@ alias kdp="kubectl describe pod"
 alias kdel="kubectl delete"
 alias kaf="kubectl apply -f"
 alias kdf="kubectl delete -f"
-alias rke2-dev="kubie ctx sc-k8s-rke2-dev"
-alias rke2-prod="kubie ctx sc-hwinf-02"
+# Add your cluster-specific kubie shortcuts here, e.g.:
+# alias dev="kubie ctx my-dev-cluster"
+# alias prod="kubie ctx my-prod-cluster"
 
 # Git shortcuts
 alias gs="git status"
@@ -294,7 +321,6 @@ alias ports="lsof -i -P -n | grep LISTEN"          # show listening ports
 alias rm="rm -i"
 alias cp="cp -i"
 alias mv="mv -i"
-alias kpk="k8pk"
 
 # Misc
 alias reload="source ~/.zshrc"
@@ -405,7 +431,8 @@ export PAGER="less"
 export LESS="-R"
 
 # --- Extra tools ---
-[[ -r ~/.config/k8pk.sh ]] && source ~/.config/k8pk.sh
+# Source any local overrides/extras (not tracked in git)
+[[ -r ~/.zshrc.local ]] && source ~/.zshrc.local
 
 # --- Prompt: Starship or Powerlevel10k (Starship-style) ---
 # Choice is set by install.sh and stored in ~/.config/terminal-fix-prompt
@@ -436,72 +463,51 @@ _CACHED_K8S_TIME=0
 
 function _shorten_k8s_context() {
   local ctx="$1"
-  
-  # OpenShift/OCP context: namespace/api-CLUSTER-nvparkosdev-nvidia-com:port/user
-  # Extract everything between api- and -nvpark
-  if [[ "$ctx" =~ /api-([a-zA-Z0-9_-]+)-nvpark ]]; then
-    echo "${match[1]}"
-    return
-  fi
-  
-  # OpenShift/OCP: extract between api- and -nvidia
-  if [[ "$ctx" =~ /api-([a-zA-Z0-9_-]+)-nvidia ]]; then
-    echo "${match[1]}"
-    return
-  fi
-  
-  # OpenShift API URLs with dots: api.CLUSTER.domain.com:port -> CLUSTER
-  if [[ "$ctx" =~ ^api\.([^.]+)\. ]]; then
-    echo "${match[1]}"
-    return
-  fi
-  
+
   # AWS EKS: arn:aws:eks:region:account:cluster/NAME -> NAME
   if [[ "$ctx" =~ :cluster/([^/]+)$ ]]; then
     echo "${match[1]}"
     return
   fi
-  
+
   # GKE: gke_project_region_NAME -> NAME
   if [[ "$ctx" =~ ^gke_.*_([^_]+)$ ]]; then
     echo "${match[1]}"
     return
   fi
-  
+
+  # OpenShift API URL with dots: api.CLUSTER.domain.com:port -> CLUSTER
+  if [[ "$ctx" =~ ^api\.([^.]+)\. ]]; then
+    echo "${match[1]}"
+    return
+  fi
+
+  # OpenShift API URL with slashes: namespace/api-CLUSTER-domain-com:port/user -> CLUSTER
+  if [[ "$ctx" =~ /api-([^:/]+) ]]; then
+    local extracted="${match[1]}"
+    # Strip trailing domain segments (-com, -io, -org, etc.)
+    extracted="${extracted%-com}"
+    extracted="${extracted%-io}"
+    extracted="${extracted%-org}"
+    extracted="${extracted%-net}"
+    echo "$extracted"
+    return
+  fi
+
   # Kubeadm: kubernetes-admin@CLUSTER -> CLUSTER
   if [[ "$ctx" =~ ^kubernetes-admin@(.+)$ ]]; then
     echo "${match[1]}"
     return
   fi
-  
-  # Docker desktop
+
+  # Docker Desktop
   [[ "$ctx" == "docker-desktop" ]] && echo "docker" && return
-  
-  # sc-k8s patterns (your custom clusters)
-  if [[ "$ctx" =~ (sc-k8s-[a-zA-Z0-9-]+) ]]; then
-    echo "${match[1]}"
-    return
-  fi
-  
-  # sc-hwinf patterns
-  if [[ "$ctx" =~ (sc-hwinf-[a-zA-Z0-9-]+) ]]; then
-    echo "${match[1]}"
-    return
-  fi
-  
-  # Generic: extract just the first segment after any /api- pattern
-  if [[ "$ctx" =~ /api-([^:/]+) ]]; then
-    local extracted="${match[1]}"
-    # Remove trailing domain-like parts (-nvidia-com, -com, etc)
-    extracted="${extracted%-nvidia-com}"
-    extracted="${extracted%-nvidia}"
-    extracted="${extracted%-com}"
-    extracted="${extracted%-io}"
-    echo "$extracted"
-    return
-  fi
-  
-  # Default: return as-is but truncate if too long
+
+  # ── Add your organisation-specific patterns below ──────────────────────────
+  # Example: my-company-dev-cluster -> dev
+  # if [[ "$ctx" =~ ^my-company-([a-zA-Z0-9-]+)$ ]]; then echo "${match[1]}"; return; fi
+
+  # Default: return as-is, truncate if too long
   if (( ${#ctx} > 25 )); then
     echo "${ctx:0:22}..."
   else
