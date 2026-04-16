@@ -539,11 +539,12 @@ function _set_terminal_title() {
   
   # Set terminal/pane title
   if [[ -n "$TMUX" ]]; then
-    # Inside tmux: set pane title (tmux passes through to outer terminal)
-    print -Pn "\e]2;${title}\a"           # Set tmux pane title
+    local tmux_session=$(tmux display-message -p '#S' 2>/dev/null)
+    # Inside tmux: set pane title (visible in pane border / status bar)
+    print -Pn "\e]2;${title}\a"
     tmux rename-window "$title_dir" 2>/dev/null  # Set tmux window name to just folder
-    # Also pass through to outer terminal (Ghostty)
-    print -Pn "\ePtmux;\e\e]0;${title}\a\e\\"
+    # Pass through to outer terminal (Ghostty): always show tx-<session>
+    print -Pn "\ePtmux;\e\e]0;tx-${tmux_session}\a\e\\"
   else
     # Outside tmux: set terminal title directly
     print -Pn "\e]0;${title}\a"
@@ -561,8 +562,10 @@ zle -N zle-line-init
 function _set_title_preexec() {
   local cmd="${1[(w)1]}"
   if [[ -n "$TMUX" ]]; then
+    local tmux_session=$(tmux display-message -p '#S' 2>/dev/null)
     print -Pn "\e]2;${cmd} ...\a"
-    print -Pn "\ePtmux;\e\e]0;${cmd} ...\a\e\\"
+    # Keep tx-<session> in Ghostty bar even while a command runs
+    print -Pn "\ePtmux;\e\e]0;tx-${tmux_session}\a\e\\"
   else
     print -Pn "\e]0;${cmd} ...\a"
   fi
