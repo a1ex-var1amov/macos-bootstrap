@@ -14,6 +14,30 @@ A dotfiles/configuration repo for a modern terminal setup. It contains config fi
 
 The installer symlinks/copies configs to their target paths (see table below), backs up existing files with `.bak.TIMESTAMP` suffixes, and optionally installs missing Homebrew packages.
 
+## Color Themes
+
+Eleven themes are available across three families:
+- **Catppuccin**: Frappé (default), Macchiato, Mocha, Latte (light)
+- **Tokyo Night**: Night, Storm, Moon, Day (light)
+- **Rosé Pine**: Main, Moon, Dawn (light)
+
+Plus pair modes that auto-switch with macOS appearance in Ghostty: Catppuccin (Mocha ↔ Latte), Tokyo Night (Night/Storm/Moon ↔ Day), Rosé Pine (Main/Moon ↔ Dawn).
+
+Theme files live in `configs/{ghostty,tmux,nvim}/themes/`. The installer (section 10, choices 1–17) asks which scheme to use and writes:
+- `~/.config/ghostty/themes/` + `theme = <name>` line in `~/.config/ghostty/config`
+- `~/.config/tmux-theme.conf` (sourced at end of `~/.tmux.conf`)
+- `~/.config/nvim/lua/active_theme.lua` + `~/.config/nvim/lua/theme_base.lua`
+- `~/.config/terminal-color-theme` (persists choice across reinstalls)
+
+To switch theme without re-running the full installer:
+```bash
+# Ghostty: edit ~/.config/ghostty/config → theme = tokyo-night
+# Tmux:
+cp configs/tmux/themes/tokyo-night.conf ~/.config/tmux-theme.conf && tmux source-file ~/.tmux.conf
+# Neovim:
+cp configs/nvim/themes/tokyo-night.lua ~/.config/nvim/lua/active_theme.lua
+```
+
 ## Config File → Install Target Mapping
 
 | Source | Installed to |

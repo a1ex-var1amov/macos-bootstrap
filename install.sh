@@ -403,12 +403,156 @@ if [[ "$PROMPT_ENGINE" == "p10k" ]]; then
 fi
 
 # =============================================================================
-# 10. DIRECTORIES
+# 10. COLOR SCHEME
+# =============================================================================
+print_section "Color Scheme"
+
+COLOR_THEME="catppuccin-frappe"
+if [[ -f "$HOME/.config/terminal-color-theme" ]]; then
+    source "$HOME/.config/terminal-color-theme" 2>/dev/null || true
+fi
+
+echo "Choose your color scheme:"
+echo ""
+echo "  ── Catppuccin ──────────────────────────────────────────────────────"
+echo "   1) Catppuccin Frappé     — cool purple-dark (default)"
+echo "   2) Catppuccin Macchiato  — cool medium dark"
+echo "   3) Catppuccin Mocha      — cool darkest dark"
+echo "   4) Catppuccin Latte      — warm light"
+echo ""
+echo "  ── Tokyo Night ─────────────────────────────────────────────────────"
+echo "   5) Tokyo Night           — deep blue-purple dark (Night)"
+echo "   6) Tokyo Night Storm     — deep blue, slightly lighter"
+echo "   7) Tokyo Night Moon      — muted purple-dark"
+echo "   8) Tokyo Night Day       — clean light"
+echo ""
+echo "  ── Rosé Pine ───────────────────────────────────────────────────────"
+echo "   9) Rosé Pine             — warm dark (Main)"
+echo "  10) Rosé Pine Moon        — deep dark variant"
+echo "  11) Rosé Pine Dawn        — warm light"
+echo ""
+echo "  ── Pairs: auto-switch with macOS appearance (Ghostty only) ─────────"
+echo "  12) Catppuccin pair       — Mocha    ↔ Latte  (tmux/nvim: Mocha)"
+echo "  13) Tokyo Night pair      — Night    ↔ Day    (tmux/nvim: Night)"
+echo "  14) Tokyo Night Storm pair— Storm    ↔ Day    (tmux/nvim: Storm)"
+echo "  15) Tokyo Night Moon pair — Moon     ↔ Day    (tmux/nvim: Moon)"
+echo "  16) Rosé Pine pair        — Main     ↔ Dawn   (tmux/nvim: Main)"
+echo "  17) Rosé Pine Moon pair   — Moon     ↔ Dawn   (tmux/nvim: Moon)"
+echo ""
+read -p "Pick [1-17] (default 1): " -r COLOR_CHOICE
+COLOR_CHOICE="${COLOR_CHOICE:-1}"
+
+case "$COLOR_CHOICE" in
+   2) COLOR_THEME="catppuccin-macchiato"  ; GHOSTTY_THEME="catppuccin-macchiato" ;;
+   3) COLOR_THEME="catppuccin-mocha"      ; GHOSTTY_THEME="catppuccin-mocha" ;;
+   4) COLOR_THEME="catppuccin-latte"      ; GHOSTTY_THEME="catppuccin-latte" ;;
+   5) COLOR_THEME="tokyo-night"           ; GHOSTTY_THEME="tokyo-night" ;;
+   6) COLOR_THEME="tokyo-night-storm"     ; GHOSTTY_THEME="tokyo-night-storm" ;;
+   7) COLOR_THEME="tokyo-night-moon"      ; GHOSTTY_THEME="tokyo-night-moon" ;;
+   8) COLOR_THEME="tokyo-night-day"       ; GHOSTTY_THEME="tokyo-night-day" ;;
+   9) COLOR_THEME="rose-pine"             ; GHOSTTY_THEME="rose-pine" ;;
+  10) COLOR_THEME="rose-pine-moon"        ; GHOSTTY_THEME="rose-pine-moon" ;;
+  11) COLOR_THEME="rose-pine-dawn"        ; GHOSTTY_THEME="rose-pine-dawn" ;;
+  12) COLOR_THEME="catppuccin-mocha"      ; GHOSTTY_THEME="dark:catppuccin-mocha,light:catppuccin-latte" ;;
+  13) COLOR_THEME="tokyo-night"           ; GHOSTTY_THEME="dark:tokyo-night,light:tokyo-night-day" ;;
+  14) COLOR_THEME="tokyo-night-storm"     ; GHOSTTY_THEME="dark:tokyo-night-storm,light:tokyo-night-day" ;;
+  15) COLOR_THEME="tokyo-night-moon"      ; GHOSTTY_THEME="dark:tokyo-night-moon,light:tokyo-night-day" ;;
+  16) COLOR_THEME="rose-pine"             ; GHOSTTY_THEME="dark:rose-pine,light:rose-pine-dawn" ;;
+  17) COLOR_THEME="rose-pine-moon"        ; GHOSTTY_THEME="dark:rose-pine-moon,light:rose-pine-dawn" ;;
+   *) COLOR_THEME="catppuccin-frappe"     ; GHOSTTY_THEME="catppuccin-frappe" ;;
+esac
+
+echo "export COLOR_THEME=$COLOR_THEME" > ~/.config/terminal-color-theme
+print_success "Color scheme: $COLOR_THEME (Ghostty: $GHOSTTY_THEME)"
+
+# Derive VS Code theme name, icon theme, extra extension, border color, and Slack sidebar string
+case "$COLOR_THEME" in
+  catppuccin-frappe)
+    VSCODE_COLOR_THEME="Catppuccin Frappé"
+    VSCODE_ICON_THEME="catppuccin-frappe"
+    VSCODE_THEME_EXT=""
+    VSCODE_BORDER_COLOR="#51576d"
+    SLACK_THEME="#303446,#292c3c,#8caaee,#303446,#414559,#c6d0f5,#a6d189,#e78284"
+    ;;
+  catppuccin-macchiato)
+    VSCODE_COLOR_THEME="Catppuccin Macchiato"
+    VSCODE_ICON_THEME="catppuccin-macchiato"
+    VSCODE_THEME_EXT=""
+    VSCODE_BORDER_COLOR="#5b6078"
+    SLACK_THEME="#24273a,#1e2030,#8aadf4,#24273a,#363a4f,#cad3f5,#a6da95,#ed8796"
+    ;;
+  catppuccin-mocha)
+    VSCODE_COLOR_THEME="Catppuccin Mocha"
+    VSCODE_ICON_THEME="catppuccin-mocha"
+    VSCODE_THEME_EXT=""
+    VSCODE_BORDER_COLOR="#585b70"
+    SLACK_THEME="#1e1e2e,#181825,#89b4fa,#1e1e2e,#313244,#cdd6f4,#a6e3a1,#f38ba8"
+    ;;
+  catppuccin-latte)
+    VSCODE_COLOR_THEME="Catppuccin Latte"
+    VSCODE_ICON_THEME="catppuccin-latte"
+    VSCODE_THEME_EXT=""
+    VSCODE_BORDER_COLOR="#9ca0b0"
+    SLACK_THEME="#eff1f5,#e6e9ef,#1e66f5,#eff1f5,#ccd0da,#4c4f69,#40a02b,#d20f39"
+    ;;
+  tokyo-night)
+    VSCODE_COLOR_THEME="Tokyo Night"
+    VSCODE_ICON_THEME="catppuccin-mocha"
+    VSCODE_THEME_EXT="enkia.tokyo-night"
+    VSCODE_BORDER_COLOR="#414868"
+    SLACK_THEME="#1a1b26,#16161e,#7aa2f7,#c0caf5,#24283b,#c0caf5,#9ece6a,#f7768e"
+    ;;
+  tokyo-night-storm)
+    VSCODE_COLOR_THEME="Tokyo Night Storm"
+    VSCODE_ICON_THEME="catppuccin-mocha"
+    VSCODE_THEME_EXT="enkia.tokyo-night"
+    VSCODE_BORDER_COLOR="#3b4261"
+    SLACK_THEME="#24283b,#1f2335,#7aa2f7,#c0caf5,#292e42,#c0caf5,#9ece6a,#f7768e"
+    ;;
+  tokyo-night-moon)
+    VSCODE_COLOR_THEME="Tokyo Night"
+    VSCODE_ICON_THEME="catppuccin-mocha"
+    VSCODE_THEME_EXT="enkia.tokyo-night"
+    VSCODE_BORDER_COLOR="#444a73"
+    SLACK_THEME="#222436,#1e2030,#82aaff,#c8d3f5,#2d3f51,#c8d3f5,#c3e88d,#ff757f"
+    ;;
+  tokyo-night-day)
+    VSCODE_COLOR_THEME="Tokyo Night Light"
+    VSCODE_ICON_THEME="catppuccin-latte"
+    VSCODE_THEME_EXT="enkia.tokyo-night"
+    VSCODE_BORDER_COLOR="#a1a6c5"
+    SLACK_THEME="#e1e2e7,#d5d6db,#2e7de9,#e1e2e7,#b6bfe2,#3760bf,#587539,#f52a65"
+    ;;
+  rose-pine)
+    VSCODE_COLOR_THEME="Rosé Pine"
+    VSCODE_ICON_THEME="catppuccin-mocha"
+    VSCODE_THEME_EXT="mvllow.rose-pine"
+    VSCODE_BORDER_COLOR="#403d52"
+    SLACK_THEME="#191724,#16141f,#9ccfd8,#191724,#26233a,#e0def4,#31748f,#eb6f92"
+    ;;
+  rose-pine-moon)
+    VSCODE_COLOR_THEME="Rosé Pine Moon"
+    VSCODE_ICON_THEME="catppuccin-mocha"
+    VSCODE_THEME_EXT="mvllow.rose-pine"
+    VSCODE_BORDER_COLOR="#44415a"
+    SLACK_THEME="#232136,#1f1d2e,#9ccfd8,#232136,#393552,#e0def4,#3e8fb0,#eb6f92"
+    ;;
+  rose-pine-dawn)
+    VSCODE_COLOR_THEME="Rosé Pine Dawn"
+    VSCODE_ICON_THEME="catppuccin-latte"
+    VSCODE_THEME_EXT="mvllow.rose-pine"
+    VSCODE_BORDER_COLOR="#dfdad9"
+    SLACK_THEME="#faf4ed,#fffaf3,#286983,#faf4ed,#dfdad9,#575279,#56949f,#b4637a"
+    ;;
+esac
+
+# =============================================================================
+# 11. DIRECTORIES
 # =============================================================================
 print_section "Directories"
 
-mkdir -p ~/.config/ghostty
-mkdir -p ~/.config/nvim
+mkdir -p ~/.config/ghostty/themes
+mkdir -p ~/.config/nvim/lua
 mkdir -p ~/.config/git
 mkdir -p ~/.vim/undo
 mkdir -p ~/.zsh/themes
@@ -418,14 +562,18 @@ mkdir -p ~/.zsh/completions
 print_success "Directories ready"
 
 # =============================================================================
-# 11. DOTFILES + CONFIG FILES
+# 12. DOTFILES + CONFIG FILES
 # =============================================================================
 print_section "Config Files"
 
-# Ghostty
+# Ghostty — install all theme files, then build config with chosen theme
+for theme_file in "$SCRIPT_DIR/configs/ghostty/themes"/*; do
+    cp "$theme_file" ~/.config/ghostty/themes/
+done
 backup_file ~/.config/ghostty/config
-cp "$SCRIPT_DIR/configs/ghostty/config" ~/.config/ghostty/config
-print_success "Ghostty config"
+sed "s|^theme = .*|theme = $GHOSTTY_THEME|" \
+    "$SCRIPT_DIR/configs/ghostty/config-base" > ~/.config/ghostty/config
+print_success "Ghostty config (theme: $GHOSTTY_THEME)"
 
 # Zsh
 backup_file ~/.zshrc
@@ -447,20 +595,23 @@ else
     print_success "Starship config"
 fi
 
-# Neovim
+# Neovim — install init.lua + theme support files
 backup_file ~/.config/nvim/init.lua
 cp "$SCRIPT_DIR/configs/nvim/init.lua" ~/.config/nvim/init.lua
-print_success "Neovim config (run 'nvim' once to auto-install plugins)"
+cp "$SCRIPT_DIR/configs/nvim/themes/theme_base.lua" ~/.config/nvim/lua/theme_base.lua
+cp "$SCRIPT_DIR/configs/nvim/themes/${COLOR_THEME}.lua" ~/.config/nvim/lua/active_theme.lua
+print_success "Neovim config + theme: $COLOR_THEME (run 'nvim' once to auto-install plugins)"
 
 # Vim
 backup_file ~/.vimrc
 cp "$SCRIPT_DIR/configs/vim/vimrc" ~/.vimrc
 print_success "Vim config"
 
-# Tmux
+# Tmux — install config + theme override file
 backup_file ~/.tmux.conf
 cp "$SCRIPT_DIR/configs/tmux/tmux.conf" ~/.tmux.conf
-print_success "Tmux config"
+cp "$SCRIPT_DIR/configs/tmux/themes/${COLOR_THEME}.conf" ~/.config/tmux-theme.conf
+print_success "Tmux config + theme: $COLOR_THEME"
 
 # Git — config (delta, globals, aliases) + global gitignore
 backup_file ~/.config/git/gitconfig
@@ -504,17 +655,22 @@ fi
 CURSOR_DIR="$HOME/Library/Application Support/Cursor/User"
 if [[ -d "$CURSOR_DIR" ]]; then
     backup_file "$CURSOR_DIR/settings.json"
-    cp "$SCRIPT_DIR/configs/cursor/settings.json" "$CURSOR_DIR/settings.json"
-    print_success "Cursor settings"
+    sed \
+      -e "s|__VSCODE_COLOR_THEME__|$VSCODE_COLOR_THEME|g" \
+      -e "s|__VSCODE_ICON_THEME__|$VSCODE_ICON_THEME|g" \
+      -e "s|__VSCODE_BORDER_COLOR__|$VSCODE_BORDER_COLOR|g" \
+      "$SCRIPT_DIR/configs/cursor/settings-base.json" > "$CURSOR_DIR/settings.json"
+    print_success "Cursor settings (theme: $VSCODE_COLOR_THEME)"
     if command_exists cursor; then
-        cursor --install-extension catppuccin.catppuccin-vsc       2>/dev/null \
-            && print_success "Cursor: Catppuccin theme"  || print_warning "Cursor: Catppuccin theme install failed"
-        cursor --install-extension catppuccin.catppuccin-vsc-icons 2>/dev/null \
-            && print_success "Cursor: Catppuccin icons" || print_warning "Cursor: Catppuccin icons install failed"
+        cursor --install-extension catppuccin.catppuccin-vsc       2>/dev/null && print_success "Cursor: Catppuccin theme ext"  || true
+        cursor --install-extension catppuccin.catppuccin-vsc-icons 2>/dev/null && print_success "Cursor: Catppuccin icon ext"   || true
+        [[ -n "$VSCODE_THEME_EXT" ]] && \
+          cursor --install-extension "$VSCODE_THEME_EXT" 2>/dev/null && print_success "Cursor: $VSCODE_THEME_EXT" || true
     else
         print_warning "cursor CLI not in PATH — install extensions manually:"
         echo "  cursor --install-extension catppuccin.catppuccin-vsc"
         echo "  cursor --install-extension catppuccin.catppuccin-vsc-icons"
+        [[ -n "$VSCODE_THEME_EXT" ]] && echo "  cursor --install-extension $VSCODE_THEME_EXT"
     fi
 else
     print_warning "Cursor not found — skipping Cursor config"
@@ -524,17 +680,23 @@ fi
 VSCODE_DIR="$HOME/Library/Application Support/Code/User"
 if [[ -d "$VSCODE_DIR" ]]; then
     backup_file "$VSCODE_DIR/settings.json"
-    cp "$SCRIPT_DIR/configs/vscode/settings.json" "$VSCODE_DIR/settings.json"
-    print_success "VS Code settings"
+    sed \
+      -e "s|__VSCODE_COLOR_THEME__|$VSCODE_COLOR_THEME|g" \
+      -e "s|__VSCODE_ICON_THEME__|$VSCODE_ICON_THEME|g" \
+      -e "s|__VSCODE_BORDER_COLOR__|$VSCODE_BORDER_COLOR|g" \
+      "$SCRIPT_DIR/configs/vscode/settings-base.json" > "$VSCODE_DIR/settings.json"
+    print_success "VS Code settings (theme: $VSCODE_COLOR_THEME)"
     if command_exists code; then
-        code --install-extension catppuccin.catppuccin-vsc                    2>/dev/null && print_success "VS Code: Catppuccin theme"   || true
-        code --install-extension catppuccin.catppuccin-vsc-icons              2>/dev/null && print_success "VS Code: Catppuccin icons"   || true
-        code --install-extension esbenp.prettier-vscode                       2>/dev/null && print_success "VS Code: Prettier"           || true
-        code --install-extension ms-python.python                             2>/dev/null && print_success "VS Code: Python"             || true
-        code --install-extension ms-python.black-formatter                    2>/dev/null && print_success "VS Code: Black formatter"    || true
-        code --install-extension golang.go                                    2>/dev/null && print_success "VS Code: Go"                 || true
-        code --install-extension ms-kubernetes-tools.vscode-kubernetes-tools  2>/dev/null && print_success "VS Code: Kubernetes"         || true
-        code --install-extension redhat.vscode-yaml                           2>/dev/null && print_success "VS Code: YAML"               || true
+        code --install-extension catppuccin.catppuccin-vsc                    2>/dev/null && print_success "VS Code: Catppuccin theme ext"  || true
+        code --install-extension catppuccin.catppuccin-vsc-icons              2>/dev/null && print_success "VS Code: Catppuccin icon ext"   || true
+        [[ -n "$VSCODE_THEME_EXT" ]] && \
+          code --install-extension "$VSCODE_THEME_EXT"                        2>/dev/null && print_success "VS Code: $VSCODE_THEME_EXT"     || true
+        code --install-extension esbenp.prettier-vscode                       2>/dev/null && print_success "VS Code: Prettier"              || true
+        code --install-extension ms-python.python                             2>/dev/null && print_success "VS Code: Python"                || true
+        code --install-extension ms-python.black-formatter                    2>/dev/null && print_success "VS Code: Black formatter"       || true
+        code --install-extension golang.go                                    2>/dev/null && print_success "VS Code: Go"                    || true
+        code --install-extension ms-kubernetes-tools.vscode-kubernetes-tools  2>/dev/null && print_success "VS Code: Kubernetes"            || true
+        code --install-extension redhat.vscode-yaml                           2>/dev/null && print_success "VS Code: YAML"                  || true
     else
         print_warning "code CLI not in PATH — install extensions manually or via Command Palette"
     fi
@@ -542,8 +704,24 @@ else
     print_warning "VS Code not found — skipping VS Code config"
 fi
 
+# ── Slack ────────────────────────────────────────────────────────────────────
+if app_installed "Slack"; then
+    echo ""
+    print_status "Slack sidebar theme for: $COLOR_THEME"
+    echo ""
+    echo "    $SLACK_THEME"
+    echo ""
+    echo "  Apply: Slack → Preferences → Themes → Colors → Custom theme → paste above"
+    if command_exists pbcopy; then
+        echo "$SLACK_THEME" | pbcopy
+        print_success "Slack theme string copied to clipboard — paste and hit Enter in Slack"
+    fi
+else
+    print_warning "Slack not found — skipping Slack theme"
+fi
+
 # =============================================================================
-# 12. MACOS DEFAULTS
+# 13. MACOS DEFAULTS
 # =============================================================================
 print_section "macOS Defaults"
 
@@ -616,13 +794,13 @@ if [[ "$(uname)" == "Darwin" ]]; then
 fi
 
 # =============================================================================
-# 13. POST-INSTALL
+# 14. POST-INSTALL
 # =============================================================================
 print_section "Post-install"
 
-# Reload tmux config if a session is running
+# Reload tmux config if a session is running (picks up new theme immediately)
 if command_exists tmux && tmux list-sessions &>/dev/null; then
-    tmux source-file ~/.tmux.conf 2>/dev/null && print_success "Tmux config reloaded"
+    tmux source-file ~/.tmux.conf 2>/dev/null && print_success "Tmux config reloaded (theme: $COLOR_THEME)"
 fi
 
 # Podman machine — initialize and start if podman is installed but no machine exists
@@ -648,9 +826,19 @@ echo -e "   ${GREEN}${BOLD}Bootstrap Complete!${NC}"
 echo "════════════════════════════════════════════════════════"
 echo ""
 echo "Next steps:"
-echo "  1. Restart Ghostty (or reload: Cmd+Shift+,)"
+echo "  1. Restart Ghostty (or reload: Cmd+Shift+,)  ← picks up new theme"
 echo "  2. Reload shell:  source ~/.zshrc"
 echo "  3. Run 'nvim'  — lazy.nvim auto-installs plugins on first launch"
+echo ""
+echo "Color scheme: $COLOR_THEME"
+echo "  To change: run ./install.sh again (section 10) or edit directly:"
+echo "    Ghostty : ~/.config/ghostty/config  (theme = <name>)"
+echo "    Tmux    : cp configs/tmux/themes/<name>.conf ~/.config/tmux-theme.conf && tmux source ~/.tmux.conf"
+echo "    Neovim  : cp configs/nvim/themes/<name>.lua ~/.config/nvim/lua/active_theme.lua"
+echo "  Available:
+    Catppuccin : catppuccin-frappe  catppuccin-macchiato  catppuccin-mocha  catppuccin-latte
+    Tokyo Night: tokyo-night  tokyo-night-storm  tokyo-night-moon  tokyo-night-day
+    Rosé Pine  : rose-pine  rose-pine-moon  rose-pine-dawn"
 echo ""
 echo "History (powered by atuin — syncs across work + home laptop):"
 echo "  atuin register    — create an account for cross-machine sync"

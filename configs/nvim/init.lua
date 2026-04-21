@@ -88,23 +88,32 @@ opt.lazyredraw  = true
 require("lazy").setup({
 
   -- -------------------------------------------------------------------------
-  -- Catppuccin Frappé (matches Ghostty / tmux / starship / delta)
+  -- Catppuccin — all flavours (frappe, macchiato, mocha, latte).
+  -- active_theme.lua picks the flavour and calls colorscheme.
   -- -------------------------------------------------------------------------
   {
     "catppuccin/nvim",
     name     = "catppuccin",
     priority = 1000,
-    opts = {
-      flavour    = "frappe",
-      background = { light = "latte", dark = "frappe" },
-      integrations = {
-        treesitter = true,
-      },
-    },
-    config = function(_, opts)
-      require("catppuccin").setup(opts)
-      vim.cmd.colorscheme("catppuccin")
-    end,
+  },
+
+  -- -------------------------------------------------------------------------
+  -- Tokyo Night — supports night / storm / moon / day variants.
+  -- active_theme.lua picks the variant via colorscheme("tokyonight-<variant>").
+  -- -------------------------------------------------------------------------
+  {
+    "folke/tokyonight.nvim",
+    priority = 1000,
+  },
+
+  -- -------------------------------------------------------------------------
+  -- Rosé Pine — supports main / moon / dawn variants.
+  -- active_theme.lua picks the variant via colorscheme("rose-pine[-moon|-dawn]").
+  -- -------------------------------------------------------------------------
+  {
+    "rose-pine/neovim",
+    name     = "rose-pine",
+    priority = 1000,
   },
 
   -- -------------------------------------------------------------------------
@@ -221,3 +230,16 @@ autocmd("BufReadPost", {
     end
   end,
 })
+
+-- =============================================================================
+-- COLOR THEME
+-- Apply active theme (set by install.sh → ~/.config/nvim/lua/active_theme.lua).
+-- Falls back to catppuccin if no theme file is installed.
+-- =============================================================================
+local ok, theme = pcall(require, "active_theme")
+if ok and type(theme) == "table" and theme.setup then
+  theme.setup()
+else
+  require("catppuccin").setup({ flavour = "frappe", integrations = { treesitter = true } })
+  vim.cmd.colorscheme("catppuccin")
+end

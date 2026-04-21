@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash -n /Users/a13x22/workdir/macos-bootstrap/install.sh)",
+      "Bash(rm configs/ghostty/themes/ferro-night configs/ghostty/themes/ferro-day configs/ghostty/themes/concrete-night configs/ghostty/themes/concrete-day)",
+      "Bash(rm configs/tmux/themes/ferro-night.conf configs/tmux/themes/ferro-day.conf configs/tmux/themes/concrete-night.conf configs/tmux/themes/concrete-day.conf)",
+      "Bash(rm configs/nvim/themes/ferro-night.lua configs/nvim/themes/ferro-day.lua configs/nvim/themes/concrete-night.lua configs/nvim/themes/concrete-day.lua)"
+    ]
+  }
+}
