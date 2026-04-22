@@ -431,6 +431,10 @@ echo "   9) Rosé Pine             — warm dark (Main)"
 echo "  10) Rosé Pine Moon        — deep dark variant"
 echo "  11) Rosé Pine Dawn        — warm light"
 echo ""
+echo "  ── Dracula ─────────────────────────────────────────────────────────"
+echo "  18) Dracula               — classic dark purple"
+echo "  19) Dracula Alucard       — official light warm-cream variant"
+echo ""
 echo "  ── Pairs: auto-switch with macOS appearance (Ghostty only) ─────────"
 echo "  12) Catppuccin pair       — Mocha    ↔ Latte  (tmux/nvim: Mocha)"
 echo "  13) Tokyo Night pair      — Night    ↔ Day    (tmux/nvim: Night)"
@@ -438,8 +442,9 @@ echo "  14) Tokyo Night Storm pair— Storm    ↔ Day    (tmux/nvim: Storm)"
 echo "  15) Tokyo Night Moon pair — Moon     ↔ Day    (tmux/nvim: Moon)"
 echo "  16) Rosé Pine pair        — Main     ↔ Dawn   (tmux/nvim: Main)"
 echo "  17) Rosé Pine Moon pair   — Moon     ↔ Dawn   (tmux/nvim: Moon)"
+echo "  20) Dracula pair          — Dracula  ↔ Alucard (tmux/nvim: Dracula)"
 echo ""
-read -p "Pick [1-17] (default 1): " -r COLOR_CHOICE
+read -p "Pick [1-20] (default 1): " -r COLOR_CHOICE
 COLOR_CHOICE="${COLOR_CHOICE:-1}"
 
 case "$COLOR_CHOICE" in
@@ -459,6 +464,9 @@ case "$COLOR_CHOICE" in
   15) COLOR_THEME="tokyo-night-moon"      ; GHOSTTY_THEME="dark:tokyo-night-moon,light:tokyo-night-day" ;;
   16) COLOR_THEME="rose-pine"             ; GHOSTTY_THEME="dark:rose-pine,light:rose-pine-dawn" ;;
   17) COLOR_THEME="rose-pine-moon"        ; GHOSTTY_THEME="dark:rose-pine-moon,light:rose-pine-dawn" ;;
+  18) COLOR_THEME="dracula"               ; GHOSTTY_THEME="dracula" ;;
+  19) COLOR_THEME="dracula-alucard"       ; GHOSTTY_THEME="dracula-alucard" ;;
+  20) COLOR_THEME="dracula"               ; GHOSTTY_THEME="dark:dracula,light:dracula-alucard" ;;
    *) COLOR_THEME="catppuccin-frappe"     ; GHOSTTY_THEME="catppuccin-frappe" ;;
 esac
 
@@ -543,6 +551,20 @@ case "$COLOR_THEME" in
     VSCODE_THEME_EXT="mvllow.rose-pine"
     VSCODE_BORDER_COLOR="#dfdad9"
     SLACK_THEME="#faf4ed,#fffaf3,#286983,#faf4ed,#dfdad9,#575279,#56949f,#b4637a"
+    ;;
+  dracula)
+    VSCODE_COLOR_THEME="Dracula"
+    VSCODE_ICON_THEME="catppuccin-mocha"
+    VSCODE_THEME_EXT="dracula-theme.theme-dracula"
+    VSCODE_BORDER_COLOR="#44475a"
+    SLACK_THEME="#282a36,#21222c,#bd93f9,#282a36,#44475a,#f8f8f2,#50fa7b,#ff5555"
+    ;;
+  dracula-alucard)
+    VSCODE_COLOR_THEME="Dracula At Night"
+    VSCODE_ICON_THEME="catppuccin-latte"
+    VSCODE_THEME_EXT="dracula-theme.theme-dracula"
+    VSCODE_BORDER_COLOR="#cfcfde"
+    SLACK_THEME="#fffbeb,#f0ead8,#644ac9,#fffbeb,#cfcfde,#1f1f1f,#14710a,#cb3a2a"
     ;;
 esac
 

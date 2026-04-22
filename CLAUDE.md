@@ -16,14 +16,15 @@ The installer symlinks/copies configs to their target paths (see table below), b
 
 ## Color Themes
 
-Eleven themes are available across three families:
+Twelve themes are available across four families:
 - **Catppuccin**: Frappé (default), Macchiato, Mocha, Latte (light)
 - **Tokyo Night**: Night, Storm, Moon, Day (light)
 - **Rosé Pine**: Main, Moon, Dawn (light)
+- **Dracula**: classic dark purple, Alucard (light warm cream)
 
-Plus pair modes that auto-switch with macOS appearance in Ghostty: Catppuccin (Mocha ↔ Latte), Tokyo Night (Night/Storm/Moon ↔ Day), Rosé Pine (Main/Moon ↔ Dawn).
+Plus pair modes that auto-switch with macOS appearance in Ghostty: Catppuccin (Mocha ↔ Latte), Tokyo Night (Night/Storm/Moon ↔ Day), Rosé Pine (Main/Moon ↔ Dawn), Dracula (Dracula ↔ Alucard).
 
-Theme files live in `configs/{ghostty,tmux,nvim}/themes/`. The installer (section 10, choices 1–17) asks which scheme to use and writes:
+Theme files live in `configs/{ghostty,tmux,nvim}/themes/`. The installer (section 10, choices 1–20) asks which scheme to use and writes:
 - `~/.config/ghostty/themes/` + `theme = <name>` line in `~/.config/ghostty/config`
 - `~/.config/tmux-theme.conf` (sourced at end of `~/.tmux.conf`)
 - `~/.config/nvim/lua/active_theme.lua` + `~/.config/nvim/lua/theme_base.lua`
