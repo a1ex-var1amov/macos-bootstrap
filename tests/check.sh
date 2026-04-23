@@ -41,7 +41,8 @@ fi
 section "Shellcheck"
 
 if command -v shellcheck &>/dev/null; then
-    shellcheck -S warning -s bash "$REPO/install.sh" \
+    # SC2088: tilde-in-quotes — intentional in user-facing print strings
+    shellcheck -S warning -s bash -e SC2088 "$REPO/install.sh" \
         && ok "install.sh shellcheck" \
         || fail "install.sh shellcheck warnings/errors"
 else
@@ -104,15 +105,92 @@ done
 # ── 6. install.sh references only files that exist ───────────────────────────
 section "Installer file references"
 
-# Extract every path of the form $SCRIPT_DIR/<something> from install.sh
+# Extract every $SCRIPT_DIR/<path> from install.sh.
+# Skip: paths with unresolved ${ variables, glob patterns (*/), and bare dirs.
 while IFS= read -r relpath; do
-    [[ -z "$relpath" ]] && continue
-    [[ -f "$REPO/$relpath" ]] \
-        && ok "$relpath" \
-        || fail "$relpath referenced in install.sh but MISSING from repo"
+    [[ -z "$relpath" ]]         && continue
+    [[ "$relpath" == *'${'* ]]  && continue   # unresolved shell variable
+    [[ "$relpath" == *'*'* ]]   && continue   # glob wildcard
+    [[ -f "$REPO/$relpath" ]]   && ok "$relpath"   && continue
+    [[ -d "$REPO/$relpath" ]]   && ok "$relpath (dir)" && continue
+    fail "$relpath referenced in install.sh but MISSING from repo"
 done < <(grep -oE '\$SCRIPT_DIR/[^"[:space:]]+' "$REPO/install.sh" \
             | sed 's|\$SCRIPT_DIR/||' \
             | sort -u)
+
+# ── 7. Installed tool health check (skipped if --repo-only passed) ────────────
+if [[ "${1:-}" != "--repo-only" ]]; then
+  section "Installed tools"
+
+  TOOLS_CLI=(
+    "bat"    "bat"
+    "eza"    "eza"
+    "rg"     "ripgrep"
+    "fd"     "fd"
+    "delta"  "git-delta"
+    "btop"   "btop"
+    "jq"     "jq"
+    "yq"     "yq"
+    "fzf"    "fzf"
+    "zoxide" "zoxide"
+    "starship" "starship"
+    "lazygit" "lazygit"
+    "atuin"  "atuin"
+    "nvim"   "neovim"
+    "tmux"   "tmux"
+    "gh"     "gh"
+  )
+
+  TOOLS_K8S=(
+    "kubectl"  "kubectl"
+    "k9s"      "k9s"
+    "helm"     "helm"
+    "kubectx"  "kubectx"
+    "stern"    "stern"
+    "kubecolor" "kubecolor"
+  )
+
+  check_tool() {
+    local cmd="$1" pkg="$2"
+    if command -v "$cmd" &>/dev/null; then
+      local ver
+      ver=$("$cmd" --version 2>&1 | head -1 | sed 's/[^0-9.]//g' | grep -oE '[0-9]+\.[0-9]+' | head -1)
+      ok "$cmd${ver:+ ($ver)}"
+    else
+      fail "$cmd not found — brew install $pkg"
+    fi
+  }
+
+  i=0
+  while (( i < ${#TOOLS_CLI[@]} )); do
+    check_tool "${TOOLS_CLI[$i]}" "${TOOLS_CLI[$((i+1))]}"
+    (( i += 2 ))
+  done
+
+  section "Kubernetes tools"
+  i=0
+  while (( i < ${#TOOLS_K8S[@]} )); do
+    check_tool "${TOOLS_K8S[$i]}" "${TOOLS_K8S[$((i+1))]}"
+    (( i += 2 ))
+  done
+
+  section "Config files installed"
+  INSTALLED_CONFIGS=(
+    "$HOME/.zshrc"
+    "$HOME/.tmux.conf"
+    "$HOME/.config/ghostty/config"
+    "$HOME/.config/starship.toml"
+    "$HOME/.config/nvim/init.lua"
+    "$HOME/.config/tmux-theme.conf"
+    "$HOME/.config/nvim/lua/active_theme.lua"
+    "$HOME/.config/git/gitconfig"
+  )
+  for f in "${INSTALLED_CONFIGS[@]}"; do
+    [[ -f "$f" ]] \
+      && ok "${f/#$HOME/~}" \
+      || fail "${f/#$HOME/~} is MISSING — run ./install.sh"
+  done
+fi
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 echo

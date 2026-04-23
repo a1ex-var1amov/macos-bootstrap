@@ -132,3 +132,10 @@ link-url = true
 
 # Bell - flash screen instead of sound
 desktop-notifications = false
+
+# =============================================================================
+# LOCAL OVERRIDES (not tracked in git)
+# Create ~/.config/ghostty/config.local to override any setting above.
+# Useful for: different font size on external monitor, custom keybinds, etc.
+# =============================================================================
+config-file = ~/.config/ghostty/config.local

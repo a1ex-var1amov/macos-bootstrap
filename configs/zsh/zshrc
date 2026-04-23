@@ -407,19 +407,21 @@ extract() {
   fi
 }
 
-# Find files by name (case-insensitive)
-ff() { command find . -type f -iname "*$1*" }
+# Find files by name (case-insensitive) — uses fd when available
+ff()   { (( $+commands[fd] )) && fd -t f "$1" || command find . -type f -iname "*$1*" }
 
-# Find directories by name (case-insensitive)
-fdir() { command find . -type d -iname "*$1*" }
+# Find directories by name (case-insensitive) — uses fd when available
+fdir() { (( $+commands[fd] )) && fd -t d "$1" || command find . -type d -iname "*$1*" }
 
 # Quick search in history
 h() { history | grep "$1" }
 
-# Show top 10 commands from history
-topcmd() { history | awk '{print $2}' | sort | uniq -c | sort -rn | head -10 }
+# Show top 10 commands from history (fc -l is the zsh-native way)
+topcmd() { fc -l 1 | awk '{print $2}' | sort | uniq -c | sort -rn | head -10 }
 
 # --- Environment variables ---
+unset KUBECONFIG  # never fall back to a stale default kubeconfig
+
 if (( $+commands[nvim] )); then
   export EDITOR="nvim"
   export VISUAL="nvim"
@@ -503,9 +505,19 @@ function _shorten_k8s_context() {
   # Docker Desktop
   [[ "$ctx" == "docker-desktop" ]] && echo "docker" && return
 
-  # ── Add your organisation-specific patterns below ──────────────────────────
-  # Example: my-company-dev-cluster -> dev
-  # if [[ "$ctx" =~ ^my-company-([a-zA-Z0-9-]+)$ ]]; then echo "${match[1]}"; return; fi
+  # ── User-defined patterns (~/.config/k8s-context-patterns) ────────────────
+  # Format: one rule per line → <substring> <display-name>
+  # Lines starting with # are comments. Example:
+  #   my-company-dev    dev
+  #   my-company-prod   prod
+  if [[ -f ~/.config/k8s-context-patterns ]]; then
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      [[ "$line" =~ ^[[:space:]]*(#|$) ]] && continue
+      local pat="${line%% *}"
+      local rep="${line#* }"
+      [[ "$ctx" == *"$pat"* ]] && echo "$rep" && return
+    done < ~/.config/k8s-context-patterns
+  fi
 
   # Default: return as-is, truncate if too long
   if (( ${#ctx} > 25 )); then
@@ -516,7 +528,7 @@ function _shorten_k8s_context() {
 }
 
 function _get_k8s_context() {
-  local now=$(date +%s)
+  local now=$EPOCHSECONDS
   # Refresh cache every 5 seconds
   if (( now - _CACHED_K8S_TIME > 5 )); then
     if (( $+commands[kubectl] )); then
@@ -586,12 +598,52 @@ if [[ -z "$GHOSTTY_RESOURCES_DIR" ]]; then
   test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
 fi
 
-# --- Auto-start tmux (only in real terminals, not IDE or nested) ---
-# Uncomment to enable:
-# if [[ -z "$TMUX" ]] && [[ -z "$VSCODE_INJECTION" ]] && [[ -z "$CURSOR_TRACE_ID" ]] && [[ -n "$PS1" ]] && [[ -o interactive ]]; then
-#   # Option 1: Attach to 'main' session or create it
-#   tmux attach -t main 2>/dev/null || tmux new -s main
-#   
-#   # Option 2: Use smart session (folder + k8s context)
-#   # ts
-# fi
+# --- Auto-start tmux (configured by install.sh) ---
+[[ -f ~/.config/terminal-tmux-autostart ]] && source ~/.config/terminal-tmux-autostart
+
+# --- Dark / light theme sync ---
+# Switches tmux and Neovim to match macOS appearance.
+# Requires a pair theme (choices 12-20 in install.sh), which writes:
+#   ~/.config/terminal-theme-pair   (THEME_DARK + THEME_LIGHT vars)
+#   ~/.config/tmux/themes/          (all tmux theme files)
+#   ~/.config/nvim/lua/themes/      (all nvim theme files)
+#
+# Usage:
+#   theme-sync          auto-detect macOS dark/light and apply
+#   theme-sync dark     force dark theme
+#   theme-sync light    force light theme
+function theme-sync() {
+  if [[ ! -f ~/.config/terminal-theme-pair ]]; then
+    echo "No pair theme configured. Run install.sh and choose a pair (options 12-20)."
+    return 1
+  fi
+  source ~/.config/terminal-theme-pair
+
+  local mode="${1:-auto}"
+  if [[ "$mode" == "auto" ]]; then
+    mode=$(defaults read -g AppleInterfaceStyle 2>/dev/null || echo "light")
+    mode="${mode:l}"  # lowercase
+  fi
+
+  local theme
+  [[ "$mode" == "dark" ]] && theme="$THEME_DARK" || theme="$THEME_LIGHT"
+
+  # Tmux
+  local tmux_theme_src="$HOME/.config/tmux/themes/${theme}.conf"
+  if [[ -f "$tmux_theme_src" ]]; then
+    cp "$tmux_theme_src" ~/.config/tmux-theme.conf
+    tmux source-file ~/.tmux.conf 2>/dev/null && \
+      echo "Tmux → $theme"
+  else
+    echo "Tmux theme file not found: $tmux_theme_src (re-run install.sh)"
+  fi
+
+  # Neovim
+  local nvim_theme_src="$HOME/.config/nvim/lua/themes/${theme}.lua"
+  if [[ -f "$nvim_theme_src" ]]; then
+    cp "$nvim_theme_src" ~/.config/nvim/lua/active_theme.lua
+    echo "Neovim → $theme (takes effect in new nvim instances)"
+  else
+    echo "Nvim theme file not found: $nvim_theme_src (re-run install.sh)"
+  fi
+}

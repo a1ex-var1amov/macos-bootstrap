@@ -7,7 +7,12 @@
       "Bash(rm configs/nvim/themes/ferro-night.lua configs/nvim/themes/ferro-day.lua configs/nvim/themes/concrete-night.lua configs/nvim/themes/concrete-day.lua)",
       "WebFetch(domain:draculatheme.com)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:spec.draculatheme.com)"
+      "WebFetch(domain:spec.draculatheme.com)",
+      "Bash(find /Users/a13x22/workdir/macos-bootstrap/configs -name \"themes\" -type d -exec ls -la {} \\\\;)",
+      "Bash(bash -n install.sh)",
+      "Bash(bash -n tests/check.sh)",
+      "Bash(zsh -n configs/zsh/zshrc)",
+      "Bash(bash tests/check.sh --repo-only)"
     ]
   }
 }

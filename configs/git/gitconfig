@@ -70,3 +70,8 @@
     
     # Push and set upstream
     pu = push -u origin HEAD
+
+# Machine-local overrides — not tracked in git (work email, signing key, custom URLs, etc.)
+# Create this file and add any [user], [url], or other sections you need.
+[include]
+    path = ~/.config/git/gitconfig.local

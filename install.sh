@@ -28,7 +28,8 @@ command_exists() { command -v "$1" &>/dev/null; }
 backup_file() {
     local file="$1"
     if [[ -f "$file" ]]; then
-        local backup="${file}.bak.$(date +%Y%m%d_%H%M%S)"
+        local backup
+        backup="${file}.bak.$(date +%Y%m%d_%H%M%S)"
         cp "$file" "$backup"
         print_warning "Backed up $file → $backup"
     fi
@@ -251,7 +252,6 @@ fi
 print_section "Zsh Profile"
 
 ZPROFILE="$HOME/.zprofile"
-BREW_SHELLENV_LINE='eval "$(/opt/homebrew/bin/brew shellenv)" 2>/dev/null || eval "$(/usr/local/bin/brew shellenv)" 2>/dev/null'
 if [[ ! -f "$ZPROFILE" ]] || ! grep -q "brew shellenv" "$ZPROFILE" 2>/dev/null; then
     cat >> "$ZPROFILE" <<'EOF'
 # Homebrew — set PATH, MANPATH, INFOPATH for this shell
@@ -473,6 +473,19 @@ esac
 echo "export COLOR_THEME=$COLOR_THEME" > ~/.config/terminal-color-theme
 print_success "Color scheme: $COLOR_THEME (Ghostty: $GHOSTTY_THEME)"
 
+# Write dark/light pair info for theme-sync (only for pair choices)
+case "$COLOR_CHOICE" in
+  12) printf 'export THEME_DARK=catppuccin-mocha\nexport THEME_LIGHT=catppuccin-latte\n'  > ~/.config/terminal-theme-pair ;;
+  13) printf 'export THEME_DARK=tokyo-night\nexport THEME_LIGHT=tokyo-night-day\n'         > ~/.config/terminal-theme-pair ;;
+  14) printf 'export THEME_DARK=tokyo-night-storm\nexport THEME_LIGHT=tokyo-night-day\n'   > ~/.config/terminal-theme-pair ;;
+  15) printf 'export THEME_DARK=tokyo-night-moon\nexport THEME_LIGHT=tokyo-night-day\n'    > ~/.config/terminal-theme-pair ;;
+  16) printf 'export THEME_DARK=rose-pine\nexport THEME_LIGHT=rose-pine-dawn\n'            > ~/.config/terminal-theme-pair ;;
+  17) printf 'export THEME_DARK=rose-pine-moon\nexport THEME_LIGHT=rose-pine-dawn\n'       > ~/.config/terminal-theme-pair ;;
+  20) printf 'export THEME_DARK=dracula\nexport THEME_LIGHT=dracula-alucard\n'             > ~/.config/terminal-theme-pair ;;
+  *)  rm -f ~/.config/terminal-theme-pair ;;   # single theme — no pair
+esac
+[[ -f ~/.config/terminal-theme-pair ]] && print_success "theme-sync pair saved (run: theme-sync)"
+
 # Derive VS Code theme name, icon theme, extra extension, border color, and Slack sidebar string
 case "$COLOR_THEME" in
   catppuccin-frappe)
@@ -574,7 +587,9 @@ esac
 print_section "Directories"
 
 mkdir -p ~/.config/ghostty/themes
+mkdir -p ~/.config/nvim/lua/themes
 mkdir -p ~/.config/nvim/lua
+mkdir -p ~/.config/tmux/themes
 mkdir -p ~/.config/git
 mkdir -p ~/.vim/undo
 mkdir -p ~/.zsh/themes
@@ -617,10 +632,14 @@ else
     print_success "Starship config"
 fi
 
-# Neovim — install init.lua + theme support files
+# Neovim — install init.lua + all theme files (needed by theme-sync)
 backup_file ~/.config/nvim/init.lua
 cp "$SCRIPT_DIR/configs/nvim/init.lua" ~/.config/nvim/init.lua
 cp "$SCRIPT_DIR/configs/nvim/themes/theme_base.lua" ~/.config/nvim/lua/theme_base.lua
+for _nvim_theme in "$SCRIPT_DIR/configs/nvim/themes"/*.lua; do
+    [[ "${_nvim_theme##*/}" == "theme_base.lua" ]] && continue
+    cp "$_nvim_theme" ~/.config/nvim/lua/themes/
+done
 cp "$SCRIPT_DIR/configs/nvim/themes/${COLOR_THEME}.lua" ~/.config/nvim/lua/active_theme.lua
 print_success "Neovim config + theme: $COLOR_THEME (run 'nvim' once to auto-install plugins)"
 
@@ -629,9 +648,12 @@ backup_file ~/.vimrc
 cp "$SCRIPT_DIR/configs/vim/vimrc" ~/.vimrc
 print_success "Vim config"
 
-# Tmux — install config + theme override file
+# Tmux — install config + all theme files (needed by theme-sync) + active theme
 backup_file ~/.tmux.conf
 cp "$SCRIPT_DIR/configs/tmux/tmux.conf" ~/.tmux.conf
+for _tmux_theme in "$SCRIPT_DIR/configs/tmux/themes"/*.conf; do
+    cp "$_tmux_theme" ~/.config/tmux/themes/
+done
 cp "$SCRIPT_DIR/configs/tmux/themes/${COLOR_THEME}.conf" ~/.config/tmux-theme.conf
 print_success "Tmux config + theme: $COLOR_THEME"
 
@@ -825,6 +847,41 @@ if command_exists tmux && tmux list-sessions &>/dev/null; then
     tmux source-file ~/.tmux.conf 2>/dev/null && print_success "Tmux config reloaded (theme: $COLOR_THEME)"
 fi
 
+# Tmux auto-start
+echo ""
+echo "Auto-start tmux when opening a new terminal?"
+echo "  1) No (launch tmux manually with: ts, tmux)"
+echo "  2) Attach to 'main' session (or create it)"
+echo "  3) Smart session — named after folder + k8s context (ts)"
+echo ""
+read -p "Pick [1/2/3] (default 1): " -r TMUX_AUTOSTART
+TMUX_AUTOSTART="${TMUX_AUTOSTART:-1}"
+
+case "$TMUX_AUTOSTART" in
+  2)
+    cat > ~/.config/terminal-tmux-autostart <<'TMUXEOF'
+# Auto-start tmux — attach to 'main' or create it
+if [[ -z "$TMUX" ]] && [[ -z "$VSCODE_INJECTION" ]] && [[ -z "$CURSOR_TRACE_ID" ]] && [[ -o interactive ]]; then
+  tmux attach -t main 2>/dev/null || tmux new-session -s main
+fi
+TMUXEOF
+    print_success "Tmux auto-start: will attach/create 'main' session"
+    ;;
+  3)
+    cat > ~/.config/terminal-tmux-autostart <<'TMUXEOF'
+# Auto-start tmux — smart session named after folder + k8s context
+if [[ -z "$TMUX" ]] && [[ -z "$VSCODE_INJECTION" ]] && [[ -z "$CURSOR_TRACE_ID" ]] && [[ -o interactive ]]; then
+  ts
+fi
+TMUXEOF
+    print_success "Tmux auto-start: smart session (ts)"
+    ;;
+  *)
+    rm -f ~/.config/terminal-tmux-autostart
+    print_status "Tmux auto-start: disabled (run 'ts' or 'tmux' manually)"
+    ;;
+esac
+
 # Podman machine — initialize and start if podman is installed but no machine exists
 if command_exists podman; then
     if ! podman machine list --format '{{.Name}}' 2>/dev/null | grep -q .; then
@@ -841,6 +898,16 @@ if command_exists podman; then
         print_success "Podman machine exists ($PODMAN_STATE)"
     fi
 fi
+
+# =============================================================================
+# 15. HEALTH CHECK
+# =============================================================================
+print_section "Health Check"
+
+echo "Running post-install verification..."
+bash "$SCRIPT_DIR/tests/check.sh" --repo-only || true
+echo ""
+print_status "Run 'bash tests/check.sh' any time to verify installed tools."
 
 echo ""
 echo "════════════════════════════════════════════════════════"
