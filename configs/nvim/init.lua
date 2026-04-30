@@ -130,6 +130,7 @@ require("lazy").setup({
   -- -------------------------------------------------------------------------
   {
     "nvim-treesitter/nvim-treesitter",
+    branch = "master",
     build = ":TSUpdate",
     event = { "BufReadPost", "BufNewFile" },
     opts = {
@@ -169,12 +170,12 @@ require("lazy").setup({
         "yamlls",    -- YAML
         "jsonls",    -- JSON
       },
-      automatic_installation = true,
+      automatic_enable = true,
     },
   },
 
   -- -------------------------------------------------------------------------
-  -- nvim-lspconfig — LSP client configs + on_attach keymaps
+  -- nvim-lspconfig — LSP server configs (uses nvim 0.11+ vim.lsp.config API)
   -- -------------------------------------------------------------------------
   {
     "neovim/nvim-lspconfig",
@@ -184,53 +185,45 @@ require("lazy").setup({
       "hrsh7th/cmp-nvim-lsp",
     },
     config = function()
-      local lspconfig   = require("lspconfig")
       local capabilities = require("cmp_nvim_lsp").default_capabilities()
 
-      local on_attach = function(_, bufnr)
-        local o = { buffer = bufnr, silent = true }
-        vim.keymap.set("n", "gd",         vim.lsp.buf.definition,   o)
-        vim.keymap.set("n", "gr",         vim.lsp.buf.references,   o)
-        vim.keymap.set("n", "gi",         vim.lsp.buf.implementation, o)
-        vim.keymap.set("n", "K",          vim.lsp.buf.hover,        o)
-        vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename,       o)
-        vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action,  o)
-        vim.keymap.set("n", "<leader>d",  vim.diagnostic.open_float, o)
-        vim.keymap.set("n", "[d",         vim.diagnostic.goto_prev, o)
-        vim.keymap.set("n", "]d",         vim.diagnostic.goto_next, o)
-        vim.keymap.set("n", "<leader>f",
-          function() vim.lsp.buf.format({ async = true }) end, o)
-      end
+      vim.api.nvim_create_autocmd("LspAttach", {
+        callback = function(args)
+          local o = { buffer = args.buf, silent = true }
+          vim.keymap.set("n", "gd",         vim.lsp.buf.definition,   o)
+          vim.keymap.set("n", "gr",         vim.lsp.buf.references,   o)
+          vim.keymap.set("n", "gi",         vim.lsp.buf.implementation, o)
+          vim.keymap.set("n", "K",          vim.lsp.buf.hover,        o)
+          vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename,       o)
+          vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action,  o)
+          vim.keymap.set("n", "<leader>d",  vim.diagnostic.open_float, o)
+          vim.keymap.set("n", "[d",         vim.diagnostic.goto_prev, o)
+          vim.keymap.set("n", "]d",         vim.diagnostic.goto_next, o)
+          vim.keymap.set("n", "<leader>f",
+            function() vim.lsp.buf.format({ async = true }) end, o)
+        end,
+      })
 
-      local servers = {
-        lua_ls = {
-          settings = {
-            Lua = {
-              runtime   = { version = "LuaJIT" },
-              workspace = { checkThirdParty = false },
-              telemetry = { enable = false },
-            },
+      vim.lsp.config("*", { capabilities = capabilities })
+
+      vim.lsp.config("lua_ls", {
+        settings = {
+          Lua = {
+            runtime   = { version = "LuaJIT" },
+            workspace = { checkThirdParty = false },
+            telemetry = { enable = false },
           },
         },
-        gopls   = {},
-        pyright = {},
-        bashls  = {},
-        yamlls  = {
-          settings = {
-            yaml = {
-              validate    = true,
-              schemaStore = { enable = true, url = "" },
-            },
+      })
+
+      vim.lsp.config("yamlls", {
+        settings = {
+          yaml = {
+            validate    = true,
+            schemaStore = { enable = true, url = "" },
           },
         },
-        jsonls  = {},
-      }
-
-      for server, cfg in pairs(servers) do
-        cfg.on_attach    = on_attach
-        cfg.capabilities = capabilities
-        lspconfig[server].setup(cfg)
-      end
+      })
 
       vim.diagnostic.config({
         virtual_text  = { prefix = "●" },
