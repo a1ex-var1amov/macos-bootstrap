@@ -27,11 +27,17 @@ command_exists() { command -v "$1" &>/dev/null; }
 
 backup_file() {
     local file="$1"
-    if [[ -f "$file" ]]; then
-        local backup
-        backup="${file}.bak.$(date +%Y%m%d_%H%M%S)"
-        cp "$file" "$backup"
-        print_warning "Backed up $file → $backup"
+    [[ -f "$file" ]] || return 0
+    local backup="${file}.bak.$(date +%Y%m%d_%H%M%S)"
+    cp "$file" "$backup"
+    print_warning "Backed up $file → $backup"
+    # Prune: keep oldest (initial/system), second-newest (previous), and newest (just made).
+    # Delete everything in between.
+    local all_count to_prune
+    all_count=$(ls -1 "${file}.bak."* 2>/dev/null | wc -l | awk '{print $1}')
+    if (( all_count > 3 )); then
+        to_prune="$(ls -1 "${file}.bak."* 2>/dev/null | sort | head -n $(( all_count - 2 )) | tail -n +2)"
+        [[ -n "$to_prune" ]] && echo "$to_prune" | xargs rm -f
     fi
 }
 

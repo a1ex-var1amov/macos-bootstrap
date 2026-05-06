@@ -205,6 +205,34 @@ alias tailf="tail -f"
 
 # Modern CLI replacements (with fallbacks)
 if (( $+commands[bat] )); then
+  # Pick bat theme matching macOS dark/light mode and active color scheme
+  export BAT_THEME=$((){
+    local _is_dark _t
+    _is_dark="$(defaults read -g AppleInterfaceStyle 2>/dev/null)"
+    if [[ -f ~/.config/terminal-theme-pair ]]; then
+      local THEME_DARK THEME_LIGHT
+      source ~/.config/terminal-theme-pair
+      [[ "$_is_dark" == "Dark" ]] && _t="$THEME_DARK" || _t="$THEME_LIGHT"
+    else
+      local COLOR_THEME
+      source ~/.config/terminal-color-theme 2>/dev/null
+      _t="$COLOR_THEME"
+    fi
+    case "$_t" in
+      catppuccin-mocha|catppuccin-macchiato) print "Catppuccin Mocha" ;;
+      catppuccin-frappe)                     print "Catppuccin Frappe" ;;
+      catppuccin-latte)                      print "Catppuccin Latte" ;;
+      dracula)                               print "Dracula" ;;
+      *)  [[ "$_is_dark" == "Dark" ]] && print "base16" || print "GitHub" ;;
+    esac
+  })
+  # Light themes need delta's light-mode diff colors too
+  case "$BAT_THEME" in
+    GitHub|"Catppuccin Latte"|OneHalfLight|"Solarized (light)"|gruvbox-light)
+      export GIT_CONFIG_PARAMETERS="'delta.syntax-theme=${BAT_THEME}' 'delta.light=true'" ;;
+    *)
+      export GIT_CONFIG_PARAMETERS="'delta.syntax-theme=${BAT_THEME}' 'delta.light=false'" ;;
+  esac
   alias cat="bat --paging=never"
   alias catp="bat"  # with pager
 fi
@@ -646,4 +674,22 @@ function theme-sync() {
   else
     echo "Nvim theme file not found: $nvim_theme_src (re-run install.sh)"
   fi
+
+  # bat / delta — update in the running shell immediately
+  local bat_theme
+  case "$theme" in
+    catppuccin-mocha|catppuccin-macchiato) bat_theme="Catppuccin Mocha" ;;
+    catppuccin-frappe)                     bat_theme="Catppuccin Frappe" ;;
+    catppuccin-latte)                      bat_theme="Catppuccin Latte" ;;
+    dracula)                               bat_theme="Dracula" ;;
+    *)  [[ "$mode" == "dark" ]] && bat_theme="base16" || bat_theme="GitHub" ;;
+  esac
+  export BAT_THEME="$bat_theme"
+  case "$bat_theme" in
+    GitHub|"Catppuccin Latte"|OneHalfLight|"Solarized (light)"|gruvbox-light)
+      export GIT_CONFIG_PARAMETERS="'delta.syntax-theme=${bat_theme}' 'delta.light=true'" ;;
+    *)
+      export GIT_CONFIG_PARAMETERS="'delta.syntax-theme=${bat_theme}' 'delta.light=false'" ;;
+  esac
+  echo "bat/delta → $bat_theme"
 }
