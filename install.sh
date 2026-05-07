@@ -572,14 +572,14 @@ case "$COLOR_THEME" in
     SLACK_THEME="#faf4ed,#fffaf3,#286983,#faf4ed,#dfdad9,#575279,#56949f,#b4637a"
     ;;
   dracula)
-    VSCODE_COLOR_THEME="Dracula"
+    VSCODE_COLOR_THEME="Dracula Theme"
     VSCODE_ICON_THEME="catppuccin-mocha"
     VSCODE_THEME_EXT="dracula-theme.theme-dracula"
     VSCODE_BORDER_COLOR="#44475a"
     SLACK_THEME="#282a36,#21222c,#bd93f9,#282a36,#44475a,#f8f8f2,#50fa7b,#ff5555"
     ;;
   dracula-alucard)
-    VSCODE_COLOR_THEME="Dracula At Night"
+    VSCODE_COLOR_THEME="Dracula Theme Soft"
     VSCODE_ICON_THEME="catppuccin-latte"
     VSCODE_THEME_EXT="dracula-theme.theme-dracula"
     VSCODE_BORDER_COLOR="#cfcfde"
