@@ -12,7 +12,19 @@
       "Bash(bash -n install.sh)",
       "Bash(bash -n tests/check.sh)",
       "Bash(zsh -n configs/zsh/zshrc)",
-      "Bash(bash tests/check.sh --repo-only)"
+      "Bash(bash tests/check.sh --repo-only)",
+      "Bash(bat --list-themes)",
+      "Bash(zsh *)",
+      "Bash(git config *)",
+      "Bash(tmux source-file *)",
+      "Bash(yes)",
+      "Bash(tmux list-keys *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(bash -n /Users/a13x22/workdir/macos-bootstrap/configs/zsh/zshrc)",
+      "Bash(xargs ls *)",
+      "Bash(xargs -I {} bash -c \"python3 -m json.tool {} > /dev/null 2>&1 || echo 'INVALID JSON: {}'\")",
+      "Bash(find ~/\".vscode/extensions/enkia.tokyo-night\"* -name \"package.json\")"
     ]
   }
 }

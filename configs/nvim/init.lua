@@ -132,13 +132,12 @@ require("lazy").setup({
     "nvim-treesitter/nvim-treesitter",
     branch = "master",
     build = ":TSUpdate",
-    event = { "BufReadPost", "BufNewFile" },
     opts = {
       highlight        = { enable = true },
       indent           = { enable = true },
       ensure_installed = {
         "bash", "dockerfile", "go", "json", "lua",
-        "markdown", "python", "toml", "yaml", "vim", "vimdoc",
+        "markdown", "markdown_inline", "python", "toml", "yaml", "vim", "vimdoc",
       },
     },
     config = function(_, opts)
