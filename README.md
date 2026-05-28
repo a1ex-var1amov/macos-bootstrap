@@ -26,10 +26,13 @@ Everything is themed with **Catppuccin Frappé** — terminal, prompt, tmux, del
 ```bash
 git clone https://github.com/a1ex-var1amov/macos-bootstrap.git
 cd macos-bootstrap
-./install.sh
+./install.sh                  # interactive (default)
+./install.sh --yes            # non-interactive, all defaults
+./install.sh --update         # only refresh config files / themes
+./install.sh --update --yes   # silently re-sync after pulling repo changes
 ```
 
-The installer is fully interactive — it will walk you through each step, ask before installing anything, and back up existing files with `.bak.TIMESTAMP` suffixes.
+The installer is fully interactive by default — walks you through each step, asks before installing anything, and backs up existing files with `.bak.TIMESTAMP` suffixes. Use `--update` after `git pull` to quickly redeploy configs without re-running the full setup.
 
 ## What the Installer Does
 
@@ -63,8 +66,9 @@ The installer is fully interactive — it will walk you through each step, ask b
 |---|---|---|
 | `cat` → `bat` | cat | Syntax highlighting, line numbers, git markers |
 | `ls`/`ll` → `eza` | ls | Icons, git status, tree view |
-| `grep` → `rg` | grep | 10–100× faster, respects .gitignore |
-| `find` → `fd` | find | Faster, friendlier syntax |
+| `rm` → `trash` | rm | Sends to macOS Trash (reversible) |
+| `rg` | grep | Use directly (10-100x faster, respects .gitignore) |
+| `fd` | find | Use directly (faster, friendlier syntax) |
 | `diff` → `delta` | diff | Side-by-side, syntax-highlighted diffs |
 | `top` → `btop` | top | Beautiful system monitor |
 | `df` → `duf` | df | Colourised disk usage |
@@ -74,6 +78,8 @@ The installer is fully interactive — it will walk you through each step, ask b
 | `tldr` | man | Practical command examples |
 | `jq` · `yq` | — | JSON/YAML processing |
 | `ncdu` | — | Interactive disk space analyser |
+
+`grep` and `find` are intentionally NOT shadowed — their flags differ from `rg`/`fd` and the muscle-memory hit isn't worth it. Use `\rm`, `\cp`, `\mv` to bypass the safety aliases when you really need to.
 
 ### History
 `atuin` — replaces Ctrl+R with a fuzzy TUI showing timestamps, duration, and exit codes. All tmux panes and plain terminals share one database. Optional cross-machine sync: `atuin register` / `atuin login`.
@@ -85,10 +91,20 @@ The installer is fully interactive — it will walk you through each step, ask b
 |---|---|
 | `k` | kubectl |
 | `kk` | k9s TUI |
-| `kctx` / `kns` | switch context / namespace |
+| `kctx` / `kns` | switch context / namespace (kubectx CLI) |
+| `kx` | fzf chooser for contexts (preview shows that cluster's namespaces) |
+| `kn` | fzf chooser for namespaces (preview shows that namespace's pods) |
 | `klog` | stern (multi-pod log tailing) |
 | `kgp/kgs/kgd/kgn` | get pods/svc/deploy/nodes |
 | `kaf` / `kdf` | apply / delete -f |
+
+### GitHub
+`gh` CLI authenticated via `gh auth login`.
+
+| Function | Description |
+|---|---|
+| `prc` | fzf PR picker -> `gh pr checkout` |
+| `prv` | fzf PR picker -> view PR locally |
 
 ### Languages
 `go` · `terraform`  
@@ -128,6 +144,12 @@ The installer:
 - Wires `[include] path = ~/.config/git/gitconfig` into `~/.gitconfig` automatically
 - Creates `~/.gitignore_global` covering `.DS_Store`, `.env`, editor swap files, `__pycache__`, etc.
 
+Modern git defaults configured:
+- `rerere.enabled` (remember conflict resolutions), `rebase.updateRefs` (stacked branches), `rebase.autoSquash`
+- `branch.sort = -committerdate` (recent branches first), `tag.sort = version:refname`, `column.ui = auto`
+- `commit.verbose = true` (full diff in editor), `diff.algorithm = histogram`, `merge.conflictstyle = zdiff3`
+- `help.autocorrect = prompt` ("did you mean X?" instead of running blindly)
+
 Useful git aliases (via `git <alias>`):
 
 | Alias | Command |
@@ -136,12 +158,15 @@ Useful git aliases (via `git <alias>`):
 | `lg` | pretty graph log |
 | `ll` | one-line log with author + time |
 | `last` | last commit with stats |
-| `undo` | reset HEAD~1 --mixed |
+| `undo` | `reset HEAD~1 --mixed` |
 | `amend` | amend without editing message |
 | `branches` | branches sorted by last commit |
 | `today` | your commits since midnight |
-| `staged` | diff of staged changes |
-| `pu` | push -u origin HEAD |
+| `staged` / `ds` | diff of staged changes |
+| `pu` | `push -u origin HEAD` |
+| `pushf` | safe force-push (`--force-with-lease --force-if-includes`) |
+| `wip` / `unwip` | quick wip commit / undo it |
+| `aliases` | list all configured aliases |
 
 ## Prompt
 
@@ -173,15 +198,34 @@ Prefix is `Ctrl+b`.
 | `v` (copy mode) | Begin selection |
 | `y` (copy mode) | Copy to macOS clipboard |
 
-**Smart session management:**
+**Smart session management** (all safe to call from inside tmux — use switch-client):
 
 ```bash
-ts          # create/attach session named after current dir + k8s context
-ts NAME     # create/attach named session
-tsp         # fzf session picker
-tls         # list sessions
-tks NAME    # kill session
+ts             # create/attach session named after current dir + k8s context
+ts NAME        # create/attach named session
+tsp            # fzf session picker
+tsk CLUSTER    # session with isolated KUBECONFIG=~/.kube/<cluster>.yaml
+tad            # attach + detach other clients (steal session)
+tls            # list sessions
+tks NAME       # kill session
+tka            # kill ALL sessions (asks for confirmation)
 ```
+
+For viewing two clusters side-by-side: open two Ghostty splits (`Cmd+D`), run `tsk cluster-a` in one and `tsk cluster-b` in the other. Or use `Prefix + P` inside tmux to peek at another session in a popup.
+
+### Tmux theme tokens
+
+Each theme file is just 11 color tokens (`@bg`, `@accent`, etc.) — see `configs/tmux/themes/catppuccin-frappe.conf` for the template. The status bar, pane borders, and popup colors all live once in `tmux.conf` and read these tokens, so a new theme is a 12-line file.
+
+### Neovim plugins
+
+Beyond LSP + treesitter + cmp, the `nvim` config ships with:
+- **Telescope** — fuzzy files/grep/buffers/symbols/diagnostics (`<leader>f*`)
+- **gitsigns** — git status in the gutter, hunk staging/preview (`<leader>h*`)
+- **which-key** — popup guide for any leader chain after a delay
+- **mini.pairs / mini.comment / mini.surround** — autopairs, `gcc`, `sa`/`sd`/`sr`
+- **oil.nvim** — edit your filesystem like a buffer (`-` opens parent dir)
+- **editorconfig** — respects `.editorconfig` files in projects
 
 ## Kubernetes Context Shortening
 

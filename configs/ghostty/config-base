@@ -49,7 +49,9 @@ window-padding-balance = true
 window-decoration = true
 macos-titlebar-style = tabs
 window-save-state = always
-confirm-close-surface = false
+# Ask before closing tabs/splits that still have running processes.
+# Use Cmd+Shift+W to force-close, or hold Option while closing.
+confirm-close-surface = true
 quit-after-last-window-closed = true
 
 # =============================================================================
@@ -105,8 +107,14 @@ keybind = super+shift+right=next_tab
 
 # Quick actions
 keybind = super+k=clear_screen
+keybind = super+shift+k=reset
 keybind = super+shift+c=copy_to_clipboard
 keybind = super+shift+v=paste_from_clipboard
+
+# Quick Terminal — drop-down terminal accessible from anywhere in macOS.
+# Requires Accessibility permission the first time (System Settings >
+# Privacy & Security > Accessibility). Toggle with Cmd+`.
+keybind = global:cmd+grave_accent=toggle_quick_terminal
 
 # =============================================================================
 # PERFORMANCE

@@ -107,8 +107,19 @@ fi
 [[ -r "$_BREW_PREFIX/opt/fzf/shell/key-bindings.zsh" ]] && source "$_BREW_PREFIX/opt/fzf/shell/key-bindings.zsh"
 [[ -r "$_BREW_PREFIX/opt/fzf/shell/completion.zsh"   ]] && source "$_BREW_PREFIX/opt/fzf/shell/completion.zsh"
 
-# fnm (Node.js version manager) — sets up PATH + auto-switches version per .nvmrc/.node-version
-(( $+commands[fnm] )) && eval "$(fnm env --use-on-cd --shell zsh)"
+# fnm (Node.js version manager) — lazy-loaded.
+# `fnm env` adds ~100ms to every shell start. Initialise on first invocation of
+# node/npm/npx/pnpm/yarn instead. After that the real fnm wrapper takes over.
+if (( $+commands[fnm] )); then
+  _fnm_lazy_init() {
+    unfunction node npm npx pnpm yarn 2>/dev/null
+    eval "$(fnm env --use-on-cd --shell zsh)"
+  }
+  for _cmd in node npm npx pnpm yarn; do
+    eval "${_cmd}() { _fnm_lazy_init && ${_cmd} \"\$@\" }"
+  done
+  unset _cmd
+fi
 
 # --- Completion styling ---
 zstyle ':completion:*' menu select                              # enable selection menu
@@ -142,7 +153,17 @@ fi
 # one SQLite database, so history is always complete regardless of where you
 # typed a command. Up-arrow keeps default per-session behaviour.
 # First-time setup: `atuin register` (or `atuin login` on a second machine).
-(( $+commands[atuin] )) && eval "$(atuin init zsh --disable-up-arrow)"
+if (( $+commands[atuin] )); then
+  # One-time import of pre-existing zsh history. Marker file prevents re-importing.
+  if [[ ! -f "${XDG_DATA_HOME:-$HOME/.local/share}/atuin/.imported" \
+     && -s "$HISTFILE" ]]; then
+    atuin import zsh 2>/dev/null \
+      && mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}/atuin" \
+      && touch "${XDG_DATA_HOME:-$HOME/.local/share}/atuin/.imported" \
+      && echo "atuin: imported existing zsh history (one-time)"
+  fi
+  eval "$(atuin init zsh --disable-up-arrow)"
+fi
 
 # --- Optional: vi-mode to leverage Starship's vimcmd_symbol ---
 # bindkey -v
@@ -237,17 +258,16 @@ if (( $+commands[bat] )); then
   alias catp="bat"  # with pager
 fi
 
-if (( $+commands[rg] )); then
-  alias grep="rg"
-else
-  alias grep="grep --color=auto"
-fi
+# grep — keep system grep aliased to colored output (scripts/muscle memory).
+# Short-letter aliases for the modern replacements so the originals still work:
+#   rg, fd  → invoke directly (already in PATH)
+#   \grep, \find → bypass the color aliases below
+alias grep="grep --color=auto"
 alias fgrep="fgrep --color=auto"
 alias egrep="egrep --color=auto"
 
-if (( $+commands[fd] )); then
-  alias find="fd"
-fi
+(( $+commands[rg] )) && alias rgi="rg --smart-case --hidden --follow --no-ignore-vcs"
+(( $+commands[fd] )) && alias fdi="fd --hidden --follow --no-ignore-vcs"
 
 if (( $+commands[btop] )); then
   alias top="btop"
@@ -303,6 +323,41 @@ if (( $+commands[stern] )); then
   alias klog="stern"  # multi-pod logs
 fi
 
+# kx — fzf chooser for kubectl contexts (preview shows the cluster's namespaces).
+# Falls back to plain kubectx output if fzf is missing.
+kx() {
+  if ! (( $+commands[kubectl] )); then
+    echo "kubectl not installed"; return 1
+  fi
+  if ! (( $+commands[fzf] )); then
+    command kubectx; return $?
+  fi
+  local ctx
+  ctx=$(kubectl config get-contexts -o name 2>/dev/null \
+        | fzf --reverse --prompt='ctx > ' \
+              --preview 'kubectl --context={} get ns 2>/dev/null | head -25' \
+              --preview-window=right:50%)
+  [[ -n "$ctx" ]] && kubectl config use-context "$ctx"
+}
+
+# kn — fzf chooser for current-context namespace.
+kn() {
+  if ! (( $+commands[kubectl] )); then
+    echo "kubectl not installed"; return 1
+  fi
+  if ! (( $+commands[fzf] )); then
+    command kubens 2>/dev/null || kubectl get ns; return $?
+  fi
+  local ns
+  ns=$(kubectl get ns -o name 2>/dev/null \
+        | sed 's|^namespace/||' \
+        | fzf --reverse --prompt='ns > ' \
+              --preview 'kubectl -n {} get pods 2>/dev/null | head -25' \
+              --preview-window=right:60%)
+  [[ -n "$ns" ]] && kubectl config set-context --current --namespace="$ns" \
+                 && echo "namespace -> $ns"
+}
+
 # Editors
 if (( $+commands[nvim] )); then
   alias vi="nvim"
@@ -338,21 +393,58 @@ alias gb="git branch"
 alias gco="git checkout"
 alias glog="git log --oneline --graph --decorate"
 
+# gh PR helpers (require: gh CLI authenticated via `gh auth login`)
+if (( $+commands[gh] )); then
+  # prc — pick a PR with fzf and check it out locally.
+  prc() {
+    if ! (( $+commands[fzf] )); then gh pr list; return; fi
+    local pr
+    pr=$(gh pr list --limit 50 \
+            --json number,title,author,headRefName \
+            --template '{{range .}}{{printf "#%v" .number}}  {{.title}}  ({{.author.login}}, {{.headRefName}}){{"\n"}}{{end}}' \
+         | fzf --reverse --prompt='pr > ' \
+               --preview 'gh pr view $(echo {} | awk "{print \$1}" | tr -d "#")' \
+               --preview-window=right:60% \
+         | awk '{print $1}' | tr -d '#')
+    [[ -n "$pr" ]] && gh pr checkout "$pr"
+  }
+  # prv — pick a PR and open it in $PAGER (or the browser with `gh pr view --web`).
+  prv() {
+    if ! (( $+commands[fzf] )); then gh pr list; return; fi
+    local pr
+    pr=$(gh pr list --limit 50 \
+            --json number,title,author \
+            --template '{{range .}}{{printf "#%v" .number}}  {{.title}}  ({{.author.login}}){{"\n"}}{{end}}' \
+         | fzf --reverse --prompt='pr > ' | awk '{print $1}' | tr -d '#')
+    [[ -n "$pr" ]] && gh pr view "$pr"
+  }
+fi
+
 # System
 # Note: df/du are already aliased to duf/dust above if those tools are installed
 (( ! $+aliases[df] )) && alias df="df -h"
 (( ! $+aliases[du] )) && alias du="du -h"
-alias free="top -l 1 | head -n 10 | grep PhysMem"  # macOS memory info
-alias ports="lsof -i -P -n | grep LISTEN"          # show listening ports
+
+# macOS memory pressure (uses kernel API, more stable than parsing `top`).
+free()  { memory_pressure 2>/dev/null | head -8 || top -l 1 -n 0 | head -10 }
+# Listening TCP ports — filters at lsof level, no grep dependency.
+ports() { lsof -iTCP -sTCP:LISTEN -P -n }
 
 # Safety
-alias rm="rm -i"
+# `trash` (brew install trash) sends files to the macOS Trash — reversible,
+# strictly better than `rm -i`. Falls back to `rm -i` when trash isn't installed.
+if (( $+commands[trash] )); then
+  alias rm="trash"
+else
+  alias rm="rm -i"
+fi
 alias cp="cp -i"
 alias mv="mv -i"
+# Bypass any of these with `\rm`, `\cp`, `\mv` (and `command rm` etc. in scripts).
 
 # Misc
 alias reload="source ~/.zshrc"
-alias path='echo $PATH | tr ":" "\n"'
+path()    { print -l $path }                         # one $PATH entry per line
 alias now="date '+%Y-%m-%d %H:%M:%S'"
 
 # Cheat sheets
@@ -362,52 +454,122 @@ alias vim-help="cat ~/.config/vim-cheatsheet.txt"
 alias vh="vim-help"
 
 # Smart tmux session management
-# Creates/attaches to session named after current folder + k8s context
+# Creates/attaches to session named after current folder + k8s context.
+# Safe to call from inside tmux — uses switch-client instead of attach.
 function ts() {
   local session_name="${1:-}"
-  
+
   if [[ -z "$session_name" ]]; then
-    # Auto-generate name from folder and k8s context
     local folder="${PWD:t}"
     [[ -z "$folder" || "$folder" == "/" ]] && folder="root"
-    
+
     local k8s_ctx=""
     if (( $+commands[kubectl] )); then
       k8s_ctx=$(kubectl config current-context 2>/dev/null)
       k8s_ctx=$(_shorten_k8s_context "$k8s_ctx")
     fi
-    
+
     if [[ -n "$k8s_ctx" ]]; then
       session_name="${folder}_${k8s_ctx}"
     else
       session_name="$folder"
     fi
   fi
-  
-  # Sanitize name (tmux doesn't like dots and colons)
-  session_name="${session_name//[.:]/-}"
-  
-  if tmux has-session -t "$session_name" 2>/dev/null; then
-    tmux attach -t "$session_name"
+
+  # Sanitize name — tmux forbids dots/colons, and whitespace causes selection
+  # ambiguity with `tmux attach -t name with spaces`.
+  session_name="${session_name//[.:[:space:]]/-}"
+
+  if ! tmux has-session -t="$session_name" 2>/dev/null; then
+    tmux new-session -ds "$session_name" -c "$PWD"
+  fi
+
+  if [[ -n "$TMUX" ]]; then
+    tmux switch-client -t "$session_name"
   else
-    tmux new-session -s "$session_name"
+    tmux attach -t "$session_name"
   fi
 }
 
-# List and pick session with fzf (if available)
+# List and pick session with fzf (if available).
+# Inside tmux uses switch-client; outside tmux attaches.
 function tsp() {
+  local picker session
   if (( $+commands[fzf] )); then
-    local session=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | fzf --height 40% --reverse)
-    [[ -n "$session" ]] && tmux attach -t "$session"
+    picker="fzf --height 40% --reverse"
   else
-    tmux list-sessions
+    tmux list-sessions 2>/dev/null
     echo "Install fzf for interactive picker, or use: tmux attach -t SESSION"
+    return 1
+  fi
+
+  session=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | eval "$picker")
+  [[ -z "$session" ]] && return 0
+
+  if [[ -n "$TMUX" ]]; then
+    tmux switch-client -t "$session"
+  else
+    tmux attach -t "$session"
+  fi
+}
+
+# tmux session with a specific KUBECONFIG — for side-by-side multi-cluster work.
+# Usage: tsk <cluster-shortname>   reads ~/.kube/<cluster>.yaml
+#        tsk <cluster> <session-name>
+# Cluster-aware session name: <folder>_<cluster>, exported KUBECONFIG isolated
+# per session. Open two such sessions in separate Ghostty splits or peek via
+# `Prefix + P` to view two clusters at once.
+function tsk() {
+  local cluster="${1:-}"
+  if [[ -z "$cluster" ]]; then
+    echo "Usage: tsk <cluster-shortname> [session-name]"
+    echo "  Looks for ~/.kube/<cluster>.yaml (or ~/.kube/<cluster>)"
+    if [[ -d "$HOME/.kube" ]]; then
+      echo "  Available kubeconfigs:"
+      ls -1 "$HOME/.kube" 2>/dev/null | grep -E '\.(yaml|yml|conf)?$' | sed 's/^/    /'
+    fi
+    return 1
+  fi
+
+  local kubeconfig=""
+  for candidate in "$HOME/.kube/${cluster}.yaml" "$HOME/.kube/${cluster}.yml" "$HOME/.kube/${cluster}" "$HOME/.kube/config-${cluster}"; do
+    [[ -f "$candidate" ]] && { kubeconfig="$candidate"; break; }
+  done
+  if [[ -z "$kubeconfig" ]]; then
+    echo "No kubeconfig found for '$cluster' (tried ~/.kube/${cluster}.{yaml,yml,} and ~/.kube/config-${cluster})"
+    return 1
+  fi
+
+  local session_name="${2:-${PWD:t}_${cluster}}"
+  session_name="${session_name//[.:[:space:]]/-}"
+
+  if ! tmux has-session -t="$session_name" 2>/dev/null; then
+    tmux new-session -ds "$session_name" -c "$PWD" -e "KUBECONFIG=$kubeconfig"
+  fi
+
+  if [[ -n "$TMUX" ]]; then
+    tmux switch-client -t "$session_name"
+  else
+    tmux attach -t "$session_name"
   fi
 }
 
 alias tls="tmux list-sessions"
 alias tks="tmux kill-session -t"
-alias tka="tmux kill-server"  # kill all
+alias tad="tmux attach -d"  # attach + detach other clients (steal session)
+
+# tka — kill the ENTIRE tmux server (all sessions). Always confirms.
+function tka() {
+  local count
+  count=$(tmux list-sessions 2>/dev/null | wc -l | awk '{print $1}')
+  if (( count == 0 )); then
+    echo "No tmux sessions running."
+    return 0
+  fi
+  read -q "?Kill ALL $count tmux session(s)? [y/N] " || { echo; return 1; }
+  echo
+  tmux kill-server && echo "All sessions killed."
+}
 
 # --- Useful functions ---
 # Create directory and cd into it
@@ -417,17 +579,21 @@ mkcd() { mkdir -p "$1" && cd "$1" }
 extract() {
   if [ -f "$1" ]; then
     case "$1" in
-      *.tar.bz2)   tar xjf "$1"     ;;
-      *.tar.gz)    tar xzf "$1"     ;;
-      *.bz2)       bunzip2 "$1"     ;;
-      *.rar)       unrar e "$1"     ;;
-      *.gz)        gunzip "$1"      ;;
-      *.tar)       tar xf "$1"      ;;
-      *.tbz2)      tar xjf "$1"     ;;
-      *.tgz)       tar xzf "$1"     ;;
-      *.zip)       unzip "$1"       ;;
-      *.Z)         uncompress "$1"  ;;
-      *.7z)        7z x "$1"        ;;
+      *.tar.bz2)   tar xjf "$1"                                 ;;
+      *.tar.gz)    tar xzf "$1"                                 ;;
+      *.tar.xz)    tar xJf "$1"                                 ;;
+      *.tar.zst)   tar --use-compress-program=unzstd -xf "$1"   ;;
+      *.tar)       tar xf  "$1"                                 ;;
+      *.tbz2)      tar xjf "$1"                                 ;;
+      *.tgz)       tar xzf "$1"                                 ;;
+      *.bz2)       bunzip2 "$1"                                 ;;
+      *.gz)        gunzip "$1"                                  ;;
+      *.xz)        unxz "$1"                                    ;;
+      *.zst)       unzstd "$1"                                  ;;
+      *.zip)       unzip "$1"                                   ;;
+      *.rar)       unrar e "$1"                                 ;;
+      *.Z)         uncompress "$1"                              ;;
+      *.7z)        7z x "$1"                                    ;;
       *)           echo "'$1' cannot be extracted via extract()" ;;
     esac
   else
@@ -448,7 +614,12 @@ h() { history | grep "$1" }
 topcmd() { fc -l 1 | awk '{print $2}' | sort | uniq -c | sort -rn | head -10 }
 
 # --- Environment variables ---
-unset KUBECONFIG  # never fall back to a stale default kubeconfig
+# Drop KUBECONFIG ONLY if it points to a missing/unreadable file (stale leftover).
+# An intentionally-set KUBECONFIG (e.g. `tsk dev` exports one via tmux -e) must
+# survive zshrc loading, or the multi-cluster workflow breaks for child panes.
+if [[ -n "$KUBECONFIG" && ! -r "${KUBECONFIG%%:*}" ]]; then
+  unset KUBECONFIG
+fi
 
 if (( $+commands[nvim] )); then
   export EDITOR="nvim"
@@ -491,6 +662,8 @@ setopt INC_APPEND_HISTORY SHARE_HISTORY HIST_IGNORE_ALL_DUPS HIST_FIND_NO_DUPS \
 _CACHED_K8S_CTX=""
 _CACHED_K8S_TIME=0
 
+# Parallel implementation lives at configs/tmux/scripts/k8s-context.sh
+# (used by tmux status bar). Keep the two in sync when adding patterns.
 function _shorten_k8s_context() {
   local ctx="$1"
 

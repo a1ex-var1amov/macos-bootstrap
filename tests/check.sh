@@ -61,6 +61,8 @@ REQUIRED_FILES=(
     configs/vim/vimrc
     configs/nvim/init.lua
     configs/tmux/tmux.conf
+    configs/tmux/scripts/git-branch.sh
+    configs/tmux/scripts/k8s-context.sh
     configs/git/gitconfig
     configs/git/gitignore_global
     configs/cursor/settings.json
@@ -73,6 +75,58 @@ for f in "${REQUIRED_FILES[@]}"; do
     [[ -f "$REPO/$f" ]] \
         && ok "$f" \
         || fail "$f is MISSING"
+done
+
+# Tmux helper scripts must be executable (status bar shells them out).
+for s in configs/tmux/scripts/*.sh; do
+    [[ -x "$REPO/$s" ]] \
+        && ok "$s (executable)" \
+        || fail "$s is NOT executable — chmod +x"
+done
+
+# Every tmux theme file must define all the @color tokens used in tmux.conf.
+section "Tmux theme tokens"
+
+REQUIRED_TOKENS=(@bg @surface @text @subtle @muted @accent @accent2 @ok @warn @err @select)
+for theme in "$REPO"/configs/tmux/themes/*.conf; do
+    theme_name="${theme##*/}"
+    missing=()
+    for tok in "${REQUIRED_TOKENS[@]}"; do
+        grep -qE "^set -g $tok " "$theme" || missing+=("$tok")
+    done
+    if (( ${#missing[@]} == 0 )); then
+        ok "${theme_name} (all 11 tokens)"
+    else
+        fail "${theme_name} missing tokens: ${missing[*]}"
+    fi
+done
+
+# tmux.conf should only reference helper scripts that we actually ship.
+# Catches typos / stale paths after refactors.
+section "Tmux script references"
+
+while IFS= read -r script_ref; do
+    script_name="${script_ref##*/}"
+    if [[ -f "$REPO/configs/tmux/scripts/$script_name" ]]; then
+        ok "tmux.conf -> scripts/$script_name"
+    else
+        fail "tmux.conf references missing script: $script_ref"
+    fi
+done < <(grep -oE '~/.config/tmux/scripts/[a-zA-Z0-9_-]+\.sh' "$REPO/configs/tmux/tmux.conf" | sort -u)
+
+# Each ghostty theme referenced by install.sh must exist in configs/ghostty/themes/.
+section "Ghostty theme references"
+
+GHOSTTY_THEMES=$(grep -oE 'GHOSTTY_THEME="[a-z-]+"' "$REPO/install.sh" \
+                 | sed 's|GHOSTTY_THEME="||; s|"||' \
+                 | sort -u)
+for gt in $GHOSTTY_THEMES; do
+    [[ -z "$gt" ]] && continue
+    if [[ -f "$REPO/configs/ghostty/themes/$gt" ]]; then
+        ok "ghostty theme: $gt"
+    else
+        fail "ghostty theme missing: $gt"
+    fi
 done
 
 # ── 5. No personal / company-specific info ───────────────────────────────────

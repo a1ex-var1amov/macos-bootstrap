@@ -14,10 +14,32 @@
     autoSetupRemote = true
 
 [fetch]
-    prune = true           # auto-delete local refs for deleted remote branches
+    prune     = true       # auto-delete local refs for deleted remote branches
+    pruneTags = true       # also drop local tags deleted upstream
 
 [rebase]
-    autoStash = true       # stash dirty working tree before rebase, pop after
+    autoStash    = true    # stash dirty working tree before rebase, pop after
+    updateRefs   = true    # rebase dependent branches together (stacked branches)
+    autoSquash   = true    # honor fixup!/squash! prefixes automatically
+
+[rerere]
+    enabled  = true        # reuse recorded conflict resolutions
+    autoUpdate = true
+
+[branch]
+    sort = -committerdate  # `git branch` lists most recent first
+
+[tag]
+    sort = version:refname # tags sort semver-correctly
+
+[column]
+    ui = auto              # `git branch`, `git tag` render in columns
+
+[commit]
+    verbose = true         # show full diff in the commit message editor
+
+[help]
+    autocorrect = prompt   # "did you mean X?" instead of running blindly
 
 [core]
     pager        = delta
@@ -27,49 +49,53 @@
     diffFilter = delta --color-only
 
 [delta]
-    navigate = true
-    light = false
+    navigate     = true
+    light        = false
     side-by-side = true
     line-numbers = true
     syntax-theme = Dracula
 
 [merge]
-    conflictstyle = diff3
+    conflictstyle = zdiff3 # like diff3 but with shrunk hunks for readability
 
 [diff]
-    colorMoved = default
+    colorMoved     = default
+    algorithm      = histogram  # better hunk detection than the default `myers`
+    mnemonicPrefix = true       # i/w/c/o prefixes in diff headers (index/work/cache/object)
+    renames        = copies     # detect renames AND copies
 
 [alias]
-    # Short status
-    s = status -sb
-    
-    # Pretty log
-    lg = log --oneline --graph --decorate --all
-    ll = log --pretty=format:'%C(yellow)%h%Creset %s %C(cyan)<%an>%Creset %C(green)(%cr)%Creset' --abbrev-commit
-    
-    # Show last commit
-    last = log -1 HEAD --stat
-    
-    # Undo last commit (keep changes)
-    undo = reset HEAD~1 --mixed
-    
-    # Amend without editing message
-    amend = commit --amend --no-edit
-    
-    # List branches by last modified
+    # ── Status / log ─────────────────────────────────────────────────────
+    s        = status -sb
+    lg       = log --oneline --graph --decorate --all
+    ll       = log --pretty=format:'%C(yellow)%h%Creset %s %C(cyan)<%an>%Creset %C(green)(%cr)%Creset' --abbrev-commit
+    last     = log -1 HEAD --stat
+    today    = !git log --since=midnight --author=\"$(git config user.email)\" --oneline
     branches = for-each-ref --sort=-committerdate refs/heads/ --format='%(committerdate:short) %(refname:short)'
-    
-    # Show what I've done today
-    today = !git log --since=midnight --author="$(git config user.email)" --oneline
-    
-    # Diff staged changes
-    staged = diff --cached
-    
-    # Pull with rebase
-    pr = pull --rebase
-    
-    # Push and set upstream
-    pu = push -u origin HEAD
+
+    # ── Diff / stage ─────────────────────────────────────────────────────
+    staged   = diff --cached
+    d        = diff
+    ds       = diff --staged
+
+    # ── History rewriting ────────────────────────────────────────────────
+    undo     = reset HEAD~1 --mixed
+    amend    = commit --amend --no-edit
+
+    # ── Push / pull ──────────────────────────────────────────────────────
+    pr       = pull --rebase
+    pu       = push -u origin HEAD
+    # pushf — safe force-push: only overrides remote if the local ref is up-to-date
+    # with what we last fetched. Strictly safer than `--force`.
+    pushf    = push --force-with-lease --force-if-includes
+
+    # ── Work-in-progress commits ─────────────────────────────────────────
+    # Quickly stash everything as a wip commit; unwip un-does it.
+    wip      = !git add -A && git commit -m \"wip [skip ci]\" --no-verify
+    unwip    = reset HEAD~1
+
+    # ── Misc ─────────────────────────────────────────────────────────────
+    aliases  = !git config --get-regexp '^alias\\.' | sed 's/^alias\\.//; s/ / = /'
 
 # Machine-local overrides — not tracked in git (work email, signing key, custom URLs, etc.)
 # Create this file and add any [user], [url], or other sections you need.

@@ -7,17 +7,23 @@
 SHELL ALIASES (custom)
 --------------------------------------------------------------------------------
   ts                Smart session: auto-name from folder + k8s context
-  ts NAME           Create/attach to session "NAME"
+  ts NAME           Create/attach session "NAME"
   tsp               Pick session with fzf (interactive)
+  tsk CLUSTER       Session with KUBECONFIG=~/.kube/CLUSTER.yaml isolated
+                    (great for side-by-side multi-cluster work)
   tls               List all sessions
   tks NAME          Kill session "NAME"
-  tka               Kill ALL sessions (careful!)
+  tka               Kill ALL sessions  (asks for confirmation)
   th / tmux-help    Show this cheatsheet
   vh / vim-help     Show vim cheatsheet
+
+  Note: ts/tsp/tsk are safe to run from inside tmux — they use switch-client.
 
 SESSIONS
 --------------------------------------------------------------------------------
   Prefix + s        Session picker (interactive)
+  Prefix + f        Session picker (fzf popup, custom)
+  Prefix + P        Peek at another session in a popup (custom)
   Prefix + w        Window/session tree picker
   Prefix + (        Previous session
   Prefix + )        Next session
@@ -30,42 +36,70 @@ SESSIONS
 
 WINDOWS (tabs)
 --------------------------------------------------------------------------------
-  Prefix + c        New window
+  Prefix + c        New window (current path, custom)
+  Prefix + e        New window (mnemonic alias, custom)
   Prefix + ,        Rename window
-  Prefix + &        Kill window
-  Prefix + n        Next window
-  Prefix + p        Previous window
+  Prefix + X        Kill window  (asks for confirmation, custom)
+  Prefix + &        Kill window  (default — also confirms)
+  Prefix + p        Previous window  (default)
+  Prefix + Tab      Last active window  (custom)
   Prefix + NUMBER   Go to window NUMBER
-  Alt + 1-5         Go to window 1-5 (no prefix)
+  Prefix + <        Move window left   (custom)
+  Prefix + >        Move window right  (custom)
+  Prefix + B        Break pane out to new window  (custom)
+  Alt + 1-9         Go to window 1-9  (no prefix, custom)
 
 PANES (splits)
 --------------------------------------------------------------------------------
-  Prefix + |        Split vertical      (custom)
-  Prefix + -        Split horizontal    (custom)
+  Prefix + |        Split vertical    (custom)
+  Prefix + -        Split horizontal  (custom)
+  Prefix + _        Split full-width horizontal  (custom)
   Prefix + x        Kill pane
   Prefix + z        Toggle pane zoom (fullscreen)
   Prefix + !        Convert pane to window
   Prefix + q        Show pane numbers (press # to jump)
+  Prefix + n        Flash pane numbers (custom override — was next-window)
   Prefix + {        Move pane left
   Prefix + }        Move pane right
   Prefix + Space    Cycle layouts
+  Prefix + m        Mark pane (default — used by move-pane -t '{marked}')
+  Prefix + y        Toggle synchronize-panes  (custom)
 
 PANE NAVIGATION
 --------------------------------------------------------------------------------
   Prefix + h/j/k/l  Navigate panes (vim-style, custom)
   Alt + arrows      Navigate panes (no prefix, custom)
   Prefix + o        Next pane
-  Ctrl+Alt+arrows   Resize pane (custom)
+  Prefix + H/J/K/L  Resize pane (vim-style, repeatable, custom)
+  Ctrl+Alt+arrows   Resize pane (no prefix, custom)
+
+POPUPS (custom, requires tmux >= 3.2)
+--------------------------------------------------------------------------------
+  Prefix + E        Floating zsh terminal
+  Prefix + g        Lazygit
+  Prefix + f        FZF session switcher (switch current client)
+  Prefix + P        Peek another session in a popup (keeps current view)
 
 COPY MODE (vi-style)
 --------------------------------------------------------------------------------
   Prefix + [        Enter copy mode
-  q                 Exit copy mode
+  Prefix + Enter    Enter copy mode  (custom alias)
+  q  /  Esc         Exit copy mode
   v                 Start selection
-  y                 Copy selection
+  V                 Line-wise selection
+  Ctrl+v            Rectangle/block selection
+  y                 Copy selection -> macOS clipboard
+  Y                 Copy current line
+  H / L             Start / end of line  (custom)
   /                 Search forward
   ?                 Search backward
   n / N             Next/prev search result
+
+NESTED TMUX
+--------------------------------------------------------------------------------
+  Prefix + b        Send literal Ctrl+b to inner app (default — preserved)
+                    Use this to address a tmux running inside a pane, or
+                    any program that listens for Ctrl+b.
 
 MISC
 --------------------------------------------------------------------------------
@@ -75,5 +109,7 @@ MISC
   Prefix + ?        Show all keybindings
 
 ================================================================================
-  Custom bindings are marked with (custom) - from your tmux.conf
+  Custom bindings are marked with (custom).
+  Config: ~/.tmux.conf  |  Theme tokens: ~/.config/tmux-theme.conf
+  Helper scripts:       ~/.config/tmux/scripts/
 ================================================================================

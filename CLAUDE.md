@@ -9,10 +9,13 @@ A dotfiles/configuration repo for a modern terminal setup. It contains config fi
 ## Installation
 
 ```bash
-./install.sh   # Interactive: installs all configs, asks for prompt engine choice
+./install.sh                  # Interactive (default)
+./install.sh --yes            # Non-interactive (accept all defaults)
+./install.sh --update         # Skip install prompts; redeploy configs/themes only
+./install.sh --update --yes   # Quiet refresh after pulling repo changes
 ```
 
-The installer symlinks/copies configs to their target paths (see table below), backs up existing files with `.bak.TIMESTAMP` suffixes, and optionally installs missing Homebrew packages.
+The installer copies configs to their target paths (see table below), backs up existing files with `.bak.TIMESTAMP` suffixes, and optionally installs missing Homebrew packages. `--update` mode skips Homebrew/CLI/Cask/SSH/macOS-defaults sections and only re-syncs config files; useful for iterating on the repo.
 
 ## Color Themes
 
@@ -71,7 +74,41 @@ In `configs/zsh/zshrc`, order matters:
 6. Prompt init (last — p10k resets zsh options, so history options are re-applied after)
 
 ### Kubernetes Context Shortening
-`_shorten_k8s_context()` in `.zshrc` normalizes long k8s context strings (AWS EKS ARNs, GKE prefixes, OpenShift API URLs, custom `sc-k8s-*` patterns) to short display names. This feeds both the terminal title and the `ts` tmux session-naming function.
+`_shorten_k8s_context()` in `.zshrc` normalizes long k8s context strings (AWS EKS ARNs, GKE prefixes, OpenShift API URLs, custom user patterns) to short display names. This feeds both the terminal title and the `ts` tmux session-naming function.
+
+A parallel bash implementation lives at `configs/tmux/scripts/k8s-context.sh` and is used by the tmux status bar (with a 5s cache to avoid shelling out to `kubectl` on every status-interval render). Keep both implementations in sync when adding patterns.
+
+User-defined patterns can be added to `~/.config/k8s-context-patterns` (one rule per line, format `<substring> <display-name>`); both implementations read this file.
+
+### Tmux Theme Token System
+Tmux themes (`configs/tmux/themes/*.conf`) are **color tokens only** — they each set 11 user options (`@bg`, `@surface`, `@text`, `@subtle`, `@muted`, `@accent`, `@accent2`, `@ok`, `@warn`, `@err`, `@select`). The actual status-bar format strings, pane border styles, popup color overrides, and all bindings live once in `configs/tmux/tmux.conf` and reference these tokens via `#{@bg}` etc.
+
+Adding a new theme = copy any existing theme file and edit the 11 hex values. The token contract is enforced by `tests/check.sh` ("Tmux theme tokens" section).
+
+### Tmux Helper Scripts
+`configs/tmux/scripts/git-branch.sh` and `configs/tmux/scripts/k8s-context.sh` are used by the tmux status-right. Both:
+- Apply a 1-second `timeout` (uses `timeout` or `gtimeout`, falls back to direct exec) so a slow disk or unreachable kubeconfig can't freeze the status bar.
+- Cache results in `$TMPDIR/tmux-*` (k8s-context only) for 5s, matching `status-interval`.
+
+The installer copies them to `~/.config/tmux/scripts/` and ensures the executable bit is set.
+
+### Tmux Session Helpers (`ts`, `tsp`, `tsk`, `tka`)
+All four functions in `.zshrc` are safe to call from inside an existing tmux client — they detect `$TMUX` and use `switch-client` instead of `attach`. `tsk` creates a session with a specific `KUBECONFIG` exported in its environment for multi-cluster workflows. `tka` always prompts before killing the server.
+
+**Important**: The zshrc unsets stale `KUBECONFIG` values (paths that no longer exist) but preserves intentionally-set ones — this is required for `tsk` to work. The check is `[[ -n "$KUBECONFIG" && ! -r "${KUBECONFIG%%:*}" ]] && unset KUBECONFIG`. Don't replace this with an unconditional `unset` or `tsk` breaks.
+
+### Lazy Plugin Loading
+`fnm` (Node.js version manager) is lazy-loaded — `fnm env` only runs the first time you invoke `node`, `npm`, `npx`, `pnpm`, or `yarn`. This shaves ~100ms off every shell startup. The pattern is a stub function that self-replaces on first use.
+
+### Shell Function Inventory
+Beyond aliases, the zshrc defines these user-facing functions:
+- Session: `ts`, `tsp`, `tsk`, `tka`, plus `tad` alias
+- Kubernetes fzf choosers: `kx` (contexts with ns preview), `kn` (namespaces with pod preview)
+- GitHub fzf choosers: `prc` (checkout PR), `prv` (view PR)
+- Filesystem: `mkcd`, `extract`, `ff`, `fdir`
+- Theme: `theme-sync` (auto-detect or explicit dark/light)
+- System: `free`, `ports`, `path`, `h`, `topcmd`
+- Internals: `_shorten_k8s_context`, `_get_k8s_context`, `_set_terminal_title`, `_fnm_lazy_init`
 
 ### Tool Aliases with Fallbacks
 All modern CLI replacements (`bat`, `eza`, `rg`, `fd`, `btop`, `duf`, `delta`, etc.) use `(( $+commands[tool] ))` guards so the config degrades gracefully when tools are missing.

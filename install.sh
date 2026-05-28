@@ -1,7 +1,14 @@
 #!/bin/bash
 #
 # macOS Bootstrap + Terminal Config Installer
-# Installs Homebrew, CLI tools, GUI apps, dotfiles, and system defaults
+# Installs Homebrew, CLI tools, GUI apps, dotfiles, and system defaults.
+#
+# Usage:
+#   ./install.sh                  Full interactive install (default)
+#   ./install.sh --yes            Non-interactive — accept all defaults
+#   ./install.sh --update         Update mode — skip install prompts, only
+#                                 redeploy config files + themes + scripts
+#   ./install.sh --update --yes   Quietly refresh configs from this repo
 #
 
 set -e
@@ -17,6 +24,54 @@ NC='\033[0m'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# ── Flags ────────────────────────────────────────────────────────────────────
+INTERACTIVE=1
+UPDATE_ONLY=0
+for arg in "$@"; do
+    case "$arg" in
+        -y|--yes|--non-interactive) INTERACTIVE=0 ;;
+        -u|--update)                UPDATE_ONLY=1 ;;
+        -h|--help)
+            cat <<'EOF'
+macOS Bootstrap + Terminal Config Installer
+
+Usage:
+  ./install.sh                  Full interactive install (default)
+  ./install.sh --yes            Non-interactive — accept all defaults
+  ./install.sh --update         Update mode — skip install prompts, only
+                                redeploy config files + themes + scripts
+  ./install.sh --update --yes   Quietly refresh configs from this repo
+EOF
+            exit 0 ;;
+        *)  echo "Unknown flag: $arg (use --help)"; exit 1 ;;
+    esac
+done
+
+# ask <prompt> [default Y|N] — returns 0 for yes, 1 for no.
+# In --yes mode, returns the default without prompting.
+ask() {
+    local prompt="$1" default="${2:-Y}" reply
+    if (( ! INTERACTIVE )); then
+        [[ "$default" == "Y" ]] && return 0 || return 1
+    fi
+    read -p "$prompt " -n 1 -r reply; echo
+    if [[ "$default" == "Y" ]]; then
+        [[ $reply =~ ^[Nn]$ ]] && return 1 || return 0
+    else
+        [[ $reply =~ ^[Yy]$ ]] && return 0 || return 1
+    fi
+}
+
+# ask_value <prompt> <default> — returns user input, or default in --yes mode.
+ask_value() {
+    local prompt="$1" default="$2" reply
+    if (( ! INTERACTIVE )); then
+        echo "$default"; return
+    fi
+    read -p "$prompt" -r reply
+    echo "${reply:-$default}"
+}
+
 print_status()  { echo -e "${BLUE}[*]${NC} $1"; }
 print_success() { echo -e "${GREEN}[+]${NC} $1"; }
 print_warning() { echo -e "${YELLOW}[!]${NC} $1"; }
@@ -28,7 +83,8 @@ command_exists() { command -v "$1" &>/dev/null; }
 backup_file() {
     local file="$1"
     [[ -f "$file" ]] || return 0
-    local backup="${file}.bak.$(date +%Y%m%d_%H%M%S)"
+    local backup
+    backup="${file}.bak.$(date +%Y%m%d_%H%M%S)"
     cp "$file" "$backup"
     print_warning "Backed up $file → $backup"
     # Prune: keep oldest (initial/system), second-newest (previous), and newest (just made).
@@ -65,18 +121,20 @@ app_installed() {
 echo ""
 echo "════════════════════════════════════════════════════════"
 echo "   macOS Bootstrap + Terminal Config Installer"
+if (( UPDATE_ONLY ));    then echo "   Mode: UPDATE (configs/themes only)"; fi
+if (( ! INTERACTIVE )); then echo "   Mode: non-interactive (--yes)"; fi
 echo "════════════════════════════════════════════════════════"
 echo ""
 
 # =============================================================================
 # 1. HOMEBREW
 # =============================================================================
+if (( ! UPDATE_ONLY )); then
 print_section "Homebrew"
 
 if ! command_exists brew; then
     print_warning "Homebrew not found."
-    read -p "Install Homebrew now? [Y/n] " -n 1 -r; echo
-    if [[ $REPLY =~ ^[Nn]$ ]]; then
+    if ! ask "Install Homebrew now? [Y/n]" Y; then
         print_error "Homebrew is required. Aborting."
         exit 1
     fi
@@ -92,10 +150,12 @@ if ! command_exists brew; then
 else
     print_success "Homebrew: $(brew --version | head -1)"
 fi
+fi  # ! UPDATE_ONLY
 
 # =============================================================================
 # 2. CLI TOOLS
 # =============================================================================
+if (( ! UPDATE_ONLY )); then
 print_section "CLI Tools"
 
 # Required — brew-install instead of aborting
@@ -146,8 +206,7 @@ else
     [[ ${#MISSING_K8S[@]} -gt 0 ]]      && echo "  Kubernetes: ${MISSING_K8S[*]}"
     [[ ${#MISSING_LANGS[@]} -gt 0 ]]    && echo "  Languages : ${MISSING_LANGS[*]}"
     echo ""
-    read -p "Install all missing tools with Homebrew? [Y/n] " -n 1 -r; echo
-    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+    if ask "Install all missing tools with Homebrew? [Y/n]" Y; then
         [[ ${#MISSING_REQUIRED[@]} -gt 0 ]] && brew install "${MISSING_REQUIRED[@]}" || true
         [[ ${#MISSING_CORE[@]} -gt 0 ]]     && brew install "${MISSING_CORE[@]}"     || true
         [[ ${#MISSING_CLI[@]} -gt 0 ]]      && brew install "${MISSING_CLI[@]}"      || true
@@ -168,17 +227,18 @@ fi
 print_status "Checking Nerd Font..."
 if ! fc-list 2>/dev/null | grep -qi "nerd\|jetbrains"; then
     print_warning "JetBrainsMono Nerd Font not detected"
-    read -p "Install JetBrainsMono Nerd Font? [Y/n] " -n 1 -r; echo
-    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+    if ask "Install JetBrainsMono Nerd Font? [Y/n]" Y; then
         brew install --cask font-jetbrains-mono-nerd-font && print_success "Nerd Font installed"
     fi
 else
     print_success "Nerd Font found"
 fi
+fi  # ! UPDATE_ONLY
 
 # =============================================================================
 # 3. GUI APPS (CASKS)
 # =============================================================================
+if (( ! UPDATE_ONLY )); then
 print_section "GUI Applications"
 
 declare -a MISSING_CASKS=()
@@ -210,8 +270,7 @@ if [[ ${#MISSING_CASKS[@]} -eq 0 ]]; then
     print_success "GUI apps present (Ghostty, Cursor, VS Code, Podman Desktop, Raycast)"
 else
     echo "Missing apps: ${MISSING_CASKS[*]}"
-    read -p "Install via Homebrew Cask? [Y/n] " -n 1 -r; echo
-    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+    if ask "Install via Homebrew Cask? [Y/n]" Y; then
         for cask in "${MISSING_CASKS[@]}"; do
             print_status "Installing $cask..."
             brew install --cask "$cask" \
@@ -222,10 +281,12 @@ else
         print_warning "Skipping GUI apps"
     fi
 fi
+fi  # ! UPDATE_ONLY
 
 # =============================================================================
 # 4. DEFAULT SHELL → ZSH
 # =============================================================================
+if (( ! UPDATE_ONLY )); then
 print_section "Default Shell"
 
 # Prefer the brew-installed zsh (newer) over system /bin/zsh
@@ -234,8 +295,7 @@ CURRENT_SHELL="$(dscl . -read /Users/"$USER" UserShell 2>/dev/null | awk '{print
 
 if [[ "$CURRENT_SHELL" != "$BREW_ZSH" && "$CURRENT_SHELL" != "/bin/zsh" ]]; then
     print_warning "Default shell is $CURRENT_SHELL"
-    read -p "Change default shell to zsh? [Y/n] " -n 1 -r; echo
-    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+    if ask "Change default shell to zsh? [Y/n]" Y; then
         # Add brew zsh to /etc/shells if not already listed
         if [[ -f "$BREW_ZSH" ]] && ! grep -qF "$BREW_ZSH" /etc/shells; then
             echo "$BREW_ZSH" | sudo tee -a /etc/shells > /dev/null
@@ -248,6 +308,7 @@ if [[ "$CURRENT_SHELL" != "$BREW_ZSH" && "$CURRENT_SHELL" != "/bin/zsh" ]]; then
 else
     print_success "Default shell is already zsh ($CURRENT_SHELL)"
 fi
+fi  # ! UPDATE_ONLY
 
 # =============================================================================
 # 5. ZPROFILE — Homebrew PATH for all shell contexts
@@ -304,29 +365,36 @@ if [[ -f "$SSH_KEY" ]]; then
     print_success "SSH key found: $SSH_KEY"
     echo "  Public key:"
     cat "${SSH_KEY}.pub" | awk '{print "  " $0}'
+elif (( UPDATE_ONLY )); then
+    print_warning "No SSH key — run without --update to generate one"
 else
     print_warning "No SSH key found at $SSH_KEY"
-    read -p "Generate a new SSH key (ed25519)? [Y/n] " -n 1 -r; echo
-    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-        read -p "Email for SSH key (default: git email): " SSH_EMAIL_INPUT
+    if ask "Generate a new SSH key (ed25519)? [Y/n]" Y; then
+        SSH_EMAIL_INPUT="$(ask_value "Email for SSH key (default: git email): " "")"
         SSH_EMAIL="${SSH_EMAIL_INPUT:-${GIT_EMAIL_INPUT:-${GIT_EMAIL:-$(git config --global user.email 2>/dev/null)}}}"
-        if [[ -z "$SSH_EMAIL" ]]; then
-            read -p "Email address: " SSH_EMAIL
+        if [[ -z "$SSH_EMAIL" && $INTERACTIVE -eq 1 ]]; then
+            SSH_EMAIL="$(ask_value "Email address: " "")"
         fi
-        mkdir -p ~/.ssh
-        chmod 700 ~/.ssh
-        ssh-keygen -t ed25519 -C "$SSH_EMAIL" -f "$SSH_KEY" -N "" \
-            && print_success "SSH key generated: $SSH_KEY" \
-            || print_warning "ssh-keygen failed"
-        # Start ssh-agent and add key to macOS keychain (persists across reboots)
-        eval "$(ssh-agent -s)" &>/dev/null
-        ssh-add --apple-use-keychain "$SSH_KEY" 2>/dev/null \
-            || ssh-add "$SSH_KEY" 2>/dev/null || true
-        echo ""
-        print_status "Your public key (add to GitHub → Settings → SSH Keys):"
-        cat "${SSH_KEY}.pub"
-        echo ""
-        read -p "Press Enter once you've added it to GitHub..." -r
+        if [[ -z "$SSH_EMAIL" ]]; then
+            print_warning "No email available — skipping SSH key generation"
+        else
+            mkdir -p ~/.ssh
+            chmod 700 ~/.ssh
+            ssh-keygen -t ed25519 -C "$SSH_EMAIL" -f "$SSH_KEY" -N "" \
+                && print_success "SSH key generated: $SSH_KEY" \
+                || print_warning "ssh-keygen failed"
+            # Start ssh-agent and add key to macOS keychain (persists across reboots)
+            eval "$(ssh-agent -s)" &>/dev/null
+            ssh-add --apple-use-keychain "$SSH_KEY" 2>/dev/null \
+                || ssh-add "$SSH_KEY" 2>/dev/null || true
+            echo ""
+            print_status "Your public key (add to GitHub → Settings → SSH Keys):"
+            cat "${SSH_KEY}.pub"
+            echo ""
+            if (( INTERACTIVE )); then
+                read -p "Press Enter once you've added it to GitHub..." -r
+            fi
+        fi
     fi
 fi
 
@@ -356,15 +424,19 @@ GIT_NAME=$(git config --global user.name  2>/dev/null || true)
 GIT_EMAIL=$(git config --global user.email 2>/dev/null || true)
 
 if [[ -z "$GIT_EMAIL" ]]; then
-    print_warning "Git identity not configured"
-    read -p "Your full name for git commits : " GIT_NAME_INPUT
-    read -p "Your email for git commits     : " GIT_EMAIL_INPUT
-    if [[ -n "$GIT_NAME_INPUT" && -n "$GIT_EMAIL_INPUT" ]]; then
-        git config --global user.name  "$GIT_NAME_INPUT"
-        git config --global user.email "$GIT_EMAIL_INPUT"
-        print_success "Git identity set: $GIT_NAME_INPUT <$GIT_EMAIL_INPUT>"
+    if (( UPDATE_ONLY )); then
+        print_warning "Git identity not configured (skipping in update mode)"
     else
-        print_warning "Skipped — set later: git config --global user.name/email"
+        print_warning "Git identity not configured"
+        GIT_NAME_INPUT="$(ask_value "Your full name for git commits : " "")"
+        GIT_EMAIL_INPUT="$(ask_value "Your email for git commits     : " "")"
+        if [[ -n "$GIT_NAME_INPUT" && -n "$GIT_EMAIL_INPUT" ]]; then
+            git config --global user.name  "$GIT_NAME_INPUT"
+            git config --global user.email "$GIT_EMAIL_INPUT"
+            print_success "Git identity set: $GIT_NAME_INPUT <$GIT_EMAIL_INPUT>"
+        else
+            print_warning "Skipped — set later: git config --global user.name/email"
+        fi
     fi
 else
     print_success "Git identity: $GIT_NAME <$GIT_EMAIL>"
@@ -379,12 +451,17 @@ PROMPT_ENGINE="starship"
 if [[ -f "$HOME/.config/terminal-fix-prompt" ]]; then
     source "$HOME/.config/terminal-fix-prompt" 2>/dev/null || true
 fi
-echo "Choose your prompt (same look: directory, git, k8s, langs, time):"
-echo "  1) Starship         — cross-shell, fast (default)"
-echo "  2) Powerlevel10k    — Zsh-only, Starship-style config"
-echo ""
-read -p "Pick [1/2] (default 1): " -r PROMPT_CHOICE
-PROMPT_CHOICE="${PROMPT_CHOICE:-1}"
+# In update mode, keep the previously-saved choice.
+if (( UPDATE_ONLY )) && [[ -n "$PROMPT_ENGINE" ]]; then
+    PROMPT_CHOICE=$([[ "$PROMPT_ENGINE" == "p10k" ]] && echo 2 || echo 1)
+    print_status "Keeping prompt engine: $PROMPT_ENGINE"
+else
+    echo "Choose your prompt (same look: directory, git, k8s, langs, time):"
+    echo "  1) Starship         — cross-shell, fast (default)"
+    echo "  2) Powerlevel10k    — Zsh-only, Starship-style config"
+    echo ""
+    PROMPT_CHOICE="$(ask_value "Pick [1/2] (default 1): " "1")"
+fi
 if [[ "$PROMPT_CHOICE" == "2" ]]; then
     PROMPT_ENGINE="p10k"
     print_status "Will use Powerlevel10k"
@@ -450,8 +527,29 @@ echo "  16) Rosé Pine pair        — Main     ↔ Dawn   (tmux/nvim: Main)"
 echo "  17) Rosé Pine Moon pair   — Moon     ↔ Dawn   (tmux/nvim: Moon)"
 echo "  20) Dracula pair          — Dracula  ↔ Alucard (tmux/nvim: Dracula)"
 echo ""
-read -p "Pick [1-20] (default 1): " -r COLOR_CHOICE
-COLOR_CHOICE="${COLOR_CHOICE:-1}"
+# In update mode, derive the choice from the previously-saved theme so we
+# don't reset it back to the default.
+if (( UPDATE_ONLY )) && [[ -n "$COLOR_THEME" ]]; then
+    case "$COLOR_THEME" in
+        catppuccin-frappe)     COLOR_CHOICE=1  ;;
+        catppuccin-macchiato)  COLOR_CHOICE=2  ;;
+        catppuccin-mocha)      COLOR_CHOICE=3  ;;
+        catppuccin-latte)      COLOR_CHOICE=4  ;;
+        tokyo-night)           COLOR_CHOICE=5  ;;
+        tokyo-night-storm)     COLOR_CHOICE=6  ;;
+        tokyo-night-moon)      COLOR_CHOICE=7  ;;
+        tokyo-night-day)       COLOR_CHOICE=8  ;;
+        rose-pine)             COLOR_CHOICE=9  ;;
+        rose-pine-moon)        COLOR_CHOICE=10 ;;
+        rose-pine-dawn)        COLOR_CHOICE=11 ;;
+        dracula)               COLOR_CHOICE=18 ;;
+        dracula-alucard)       COLOR_CHOICE=19 ;;
+        *)                     COLOR_CHOICE=1  ;;
+    esac
+    print_status "Keeping color scheme: $COLOR_THEME"
+else
+    COLOR_CHOICE="$(ask_value "Pick [1-20] (default 1): " "1")"
+fi
 
 case "$COLOR_CHOICE" in
    2) COLOR_THEME="catppuccin-macchiato"  ; GHOSTTY_THEME="catppuccin-macchiato" ;;
@@ -596,6 +694,7 @@ mkdir -p ~/.config/ghostty/themes
 mkdir -p ~/.config/nvim/lua/themes
 mkdir -p ~/.config/nvim/lua
 mkdir -p ~/.config/tmux/themes
+mkdir -p ~/.config/tmux/scripts
 mkdir -p ~/.config/git
 mkdir -p ~/.vim/undo
 mkdir -p ~/.zsh/themes
@@ -654,14 +753,21 @@ backup_file ~/.vimrc
 cp "$SCRIPT_DIR/configs/vim/vimrc" ~/.vimrc
 print_success "Vim config"
 
-# Tmux — install config + all theme files (needed by theme-sync) + active theme
+# Tmux — install config + helper scripts + all theme files + active theme.
+# Theme files are color-only token overrides; status-bar/binding logic lives
+# in tmux.conf and reads those tokens. Helper scripts back the status bar's
+# git-branch and k8s-context segments (with caching + timeout guards).
 backup_file ~/.tmux.conf
 cp "$SCRIPT_DIR/configs/tmux/tmux.conf" ~/.tmux.conf
 for _tmux_theme in "$SCRIPT_DIR/configs/tmux/themes"/*.conf; do
     cp "$_tmux_theme" ~/.config/tmux/themes/
 done
 cp "$SCRIPT_DIR/configs/tmux/themes/${COLOR_THEME}.conf" ~/.config/tmux-theme.conf
-print_success "Tmux config + theme: $COLOR_THEME"
+for _tmux_script in "$SCRIPT_DIR/configs/tmux/scripts"/*.sh; do
+    cp "$_tmux_script" ~/.config/tmux/scripts/
+    chmod +x ~/.config/tmux/scripts/"${_tmux_script##*/}"
+done
+print_success "Tmux config + theme: $COLOR_THEME (+ helper scripts)"
 
 # Git — config (delta, globals, aliases) + global gitignore
 backup_file ~/.config/git/gitconfig
@@ -775,7 +881,7 @@ fi
 # =============================================================================
 print_section "macOS Defaults"
 
-if [[ "$(uname)" == "Darwin" ]]; then
+if [[ "$(uname)" == "Darwin" ]] && (( ! UPDATE_ONLY )); then
     echo "Apply sensible macOS developer defaults?"
     echo "  • Fastest key repeat (no lag while holding a key)"
     echo "  • Tap-to-click on trackpad"
@@ -786,8 +892,7 @@ if [[ "$(uname)" == "Darwin" ]]; then
     echo "  • Expand save/print panels by default"
     echo "  • No .DS_Store files on network/USB volumes"
     echo ""
-    read -p "Apply macOS defaults? [Y/n] " -n 1 -r; echo
-    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+    if ask "Apply macOS defaults? [Y/n]" Y; then
 
         # Key repeat — fastest possible (feels like a proper keyboard)
         defaults write NSGlobalDomain KeyRepeat        -int 2
@@ -853,15 +958,21 @@ if command_exists tmux && tmux list-sessions &>/dev/null; then
     tmux source-file ~/.tmux.conf 2>/dev/null && print_success "Tmux config reloaded (theme: $COLOR_THEME)"
 fi
 
-# Tmux auto-start
-echo ""
-echo "Auto-start tmux when opening a new terminal?"
-echo "  1) No (launch tmux manually with: ts, tmux)"
-echo "  2) Attach to 'main' session (or create it)"
-echo "  3) Smart session — named after folder + k8s context (ts)"
-echo ""
-read -p "Pick [1/2/3] (default 1): " -r TMUX_AUTOSTART
-TMUX_AUTOSTART="${TMUX_AUTOSTART:-1}"
+# Tmux auto-start — in update mode, leave existing setting alone.
+if (( UPDATE_ONLY )) && [[ -f ~/.config/terminal-tmux-autostart ]]; then
+    print_success "Tmux auto-start: keeping existing configuration"
+    TMUX_AUTOSTART=skip
+elif (( UPDATE_ONLY )); then
+    TMUX_AUTOSTART=skip
+else
+    echo ""
+    echo "Auto-start tmux when opening a new terminal?"
+    echo "  1) No (launch tmux manually with: ts, tmux)"
+    echo "  2) Attach to 'main' session (or create it)"
+    echo "  3) Smart session — named after folder + k8s context (ts)"
+    echo ""
+    TMUX_AUTOSTART="$(ask_value "Pick [1/2/3] (default 1): " "1")"
+fi
 
 case "$TMUX_AUTOSTART" in
   2)
@@ -882,6 +993,8 @@ fi
 TMUXEOF
     print_success "Tmux auto-start: smart session (ts)"
     ;;
+  skip)
+    : ;;  # keep existing setting (update mode)
   *)
     rm -f ~/.config/terminal-tmux-autostart
     print_status "Tmux auto-start: disabled (run 'ts' or 'tmux' manually)"
@@ -889,11 +1002,10 @@ TMUXEOF
 esac
 
 # Podman machine — initialize and start if podman is installed but no machine exists
-if command_exists podman; then
+if (( ! UPDATE_ONLY )) && command_exists podman; then
     if ! podman machine list --format '{{.Name}}' 2>/dev/null | grep -q .; then
         print_status "Initializing Podman machine (one-time setup, downloads ~700MB)..."
-        read -p "Initialize Podman machine now? [Y/n] " -n 1 -r; echo
-        if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+        if ask "Initialize Podman machine now? [Y/n]" Y; then
             podman machine init  && print_success "Podman machine initialized" || print_warning "podman machine init failed"
             podman machine start && print_success "Podman machine started"     || print_warning "podman machine start failed"
         else
@@ -942,6 +1054,8 @@ echo "  Ctrl+R            — open atuin fuzzy history search"
 echo ""
 echo "Useful commands:"
 echo "  ts / tsp          — smart tmux session / fzf session picker"
+echo "  tsk CLUSTER       — tmux session with isolated KUBECONFIG"
+echo "  tka               — kill ALL tmux sessions (asks first)"
 echo "  th / vh           — Tmux / Vim cheatsheets"
 echo "  kk                — k9s (Kubernetes TUI)"
 echo "  kctx / kns        — switch k8s context / namespace"

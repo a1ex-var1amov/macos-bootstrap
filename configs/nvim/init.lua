@@ -80,7 +80,8 @@ opt.linebreak  = true
 opt.updatetime  = 250
 opt.timeoutlen  = 500
 opt.ttimeoutlen = 10
-opt.lazyredraw  = true
+-- NOTE: lazyredraw is deprecated in nvim 0.10+ and causes flicker with floating
+-- windows (telescope, which-key, lspconfig diagnostics). Leaving it off.
 
 -- =============================================================================
 -- PLUGINS
@@ -293,6 +294,143 @@ require("lazy").setup({
       })
     end,
   },
+
+  -- -------------------------------------------------------------------------
+  -- Telescope — fuzzy finder for files / live grep / buffers / LSP symbols.
+  -- Mappings:
+  --   <leader>ff   find files
+  --   <leader>fg   live grep (uses ripgrep)
+  --   <leader>fb   open buffers
+  --   <leader>fh   help tags
+  --   <leader>fs   document symbols (LSP)
+  --   <leader>fr   recent files
+  -- -------------------------------------------------------------------------
+  {
+    "nvim-telescope/telescope.nvim",
+    dependencies = { "nvim-lua/plenary.nvim" },
+    cmd = "Telescope",
+    keys = {
+      { "<leader>ff", function() require("telescope.builtin").find_files() end,                desc = "Find files"     },
+      { "<leader>fg", function() require("telescope.builtin").live_grep() end,                 desc = "Live grep"      },
+      { "<leader>fb", function() require("telescope.builtin").buffers() end,                   desc = "Buffers"        },
+      { "<leader>fh", function() require("telescope.builtin").help_tags() end,                 desc = "Help tags"      },
+      { "<leader>fr", function() require("telescope.builtin").oldfiles() end,                  desc = "Recent files"   },
+      { "<leader>fs", function() require("telescope.builtin").lsp_document_symbols() end,      desc = "Doc symbols"    },
+      { "<leader>fd", function() require("telescope.builtin").diagnostics() end,               desc = "Diagnostics"    },
+      { "<leader>/",  function() require("telescope.builtin").current_buffer_fuzzy_find() end, desc = "Buffer search"  },
+    },
+    opts = {
+      defaults = {
+        layout_strategy = "horizontal",
+        layout_config   = { horizontal = { preview_width = 0.55 } },
+        path_display    = { "smart" },
+        sorting_strategy = "ascending",
+        prompt_prefix    = "  ",
+        selection_caret  = " ",
+      },
+      pickers = {
+        find_files = { hidden = true, find_command = { "rg", "--files", "--hidden", "--glob", "!**/.git/*" } },
+      },
+    },
+  },
+
+  -- -------------------------------------------------------------------------
+  -- gitsigns — git status in the sign column, hunk navigation/staging.
+  -- Mappings:
+  --   ]c / [c       next / previous hunk
+  --   <leader>hs    stage hunk
+  --   <leader>hr    reset hunk
+  --   <leader>hp    preview hunk
+  --   <leader>hb    blame line
+  -- -------------------------------------------------------------------------
+  {
+    "lewis6991/gitsigns.nvim",
+    event = "BufReadPre",
+    opts = {
+      signs = {
+        add          = { text = "│" },
+        change       = { text = "│" },
+        delete       = { text = "_" },
+        topdelete    = { text = "‾" },
+        changedelete = { text = "~" },
+        untracked    = { text = "┆" },
+      },
+      on_attach = function(buf)
+        local gs = package.loaded.gitsigns
+        local function m(mode, lhs, rhs, desc)
+          vim.keymap.set(mode, lhs, rhs, { buffer = buf, desc = desc, silent = true })
+        end
+        m("n", "]c", function() if vim.wo.diff then return "]c" end; vim.schedule(gs.next_hunk); return "<Ignore>" end, "Next hunk")
+        m("n", "[c", function() if vim.wo.diff then return "[c" end; vim.schedule(gs.prev_hunk); return "<Ignore>" end, "Prev hunk")
+        m("n", "<leader>hs", gs.stage_hunk,      "Stage hunk")
+        m("n", "<leader>hr", gs.reset_hunk,      "Reset hunk")
+        m("n", "<leader>hS", gs.stage_buffer,    "Stage buffer")
+        m("n", "<leader>hu", gs.undo_stage_hunk, "Undo stage hunk")
+        m("n", "<leader>hR", gs.reset_buffer,    "Reset buffer")
+        m("n", "<leader>hp", gs.preview_hunk,    "Preview hunk")
+        m("n", "<leader>hb", function() gs.blame_line({ full = true }) end, "Blame line")
+        m("n", "<leader>hd", gs.diffthis,        "Diff this")
+      end,
+    },
+  },
+
+  -- -------------------------------------------------------------------------
+  -- which-key — pops up a guide for any leader/prefix chain after a delay.
+  -- Massive discoverability win for the mappings above.
+  -- -------------------------------------------------------------------------
+  {
+    "folke/which-key.nvim",
+    event = "VeryLazy",
+    opts = {
+      preset = "modern",
+      win    = { border = "rounded" },
+      spec = {
+        { "<leader>b", group = "buffer"     },
+        { "<leader>f", group = "find/file"  },
+        { "<leader>h", group = "git hunks"  },
+        { "<leader>c", group = "code/copy"  },
+        { "<leader>r", group = "rename"     },
+        { "g",         group = "goto"       },
+        { "]",         group = "next"       },
+        { "[",         group = "previous"   },
+      },
+    },
+  },
+
+  -- -------------------------------------------------------------------------
+  -- mini.nvim — small, fast collection. We enable just three modules:
+  --   mini.pairs       auto-close brackets/quotes
+  --   mini.comment     gcc / gc{motion} to (un)comment
+  --   mini.surround    sa/sr/sd to add/replace/delete surrounding pairs
+  -- -------------------------------------------------------------------------
+  {
+    "echasnovski/mini.nvim",
+    event = "VeryLazy",
+    config = function()
+      require("mini.pairs").setup()
+      require("mini.comment").setup()
+      require("mini.surround").setup()
+    end,
+  },
+
+  -- -------------------------------------------------------------------------
+  -- oil.nvim — edit your filesystem like a buffer.
+  -- `-` opens parent dir, save (`:w`) applies rename/delete/create.
+  -- -------------------------------------------------------------------------
+  {
+    "stevearc/oil.nvim",
+    cmd  = "Oil",
+    keys = { { "-", "<cmd>Oil<CR>", desc = "Open parent dir" } },
+    opts = {
+      view_options = { show_hidden = true },
+      keymaps      = { ["<C-h>"] = false, ["<C-l>"] = false }, -- keep window-nav defaults
+    },
+  },
+
+  -- -------------------------------------------------------------------------
+  -- editorconfig — honor .editorconfig files in projects.
+  -- -------------------------------------------------------------------------
+  { "editorconfig/editorconfig-vim", event = "BufReadPre" },
 
 }, {
   ui = { border = "rounded" },

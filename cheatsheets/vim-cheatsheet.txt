@@ -4,7 +4,7 @@
   Leader = Space (press Space, then the key)
 ================================================================================
 
-CUSTOM KEYBINDINGS (from your vimrc)
+CUSTOM KEYBINDINGS (from your vimrc / init.lua)
 --------------------------------------------------------------------------------
   Space + w        Save file
   Space + q        Quit
@@ -17,6 +17,47 @@ CUSTOM KEYBINDINGS (from your vimrc)
   Space + bd       Delete buffer
   jk or jj         Exit insert mode (alternative to ESC)
   Ctrl + h/j/k/l   Navigate between splits
+
+NEOVIM PLUGINS  (these need ./install.sh + `nvim` once to install)
+--------------------------------------------------------------------------------
+Telescope (fuzzy finder):
+  Space + ff       Find files
+  Space + fg       Live grep (ripgrep)
+  Space + fb       Open buffers
+  Space + fr       Recent files
+  Space + fh       Help tags
+  Space + fs       Document symbols (LSP)
+  Space + fd       Diagnostics
+  Space + /        Fuzzy search current buffer
+
+Gitsigns (git in the gutter):
+  ]c / [c          Next / previous hunk
+  Space + hp       Preview hunk
+  Space + hs       Stage hunk
+  Space + hr       Reset hunk
+  Space + hb       Blame line
+  Space + hd       Diff this file
+
+Oil (filesystem as a buffer):
+  -                Open parent directory (edit -> save to apply changes)
+
+LSP (when an LSP server is attached):
+  gd               Go to definition
+  gr               References
+  gi               Implementation
+  K                Hover docs
+  Space + rn       Rename symbol
+  Space + ca       Code action
+  [d / ]d          Previous / next diagnostic
+  Space + f        Format buffer
+
+mini.nvim modules:
+  gcc              Toggle line comment
+  gc{motion}       Toggle comment over motion (e.g. gcap)
+  sa{motion}{char} Add surround (e.g. saiw")
+  sd{char}         Delete surround
+  sr{old}{new}     Replace surround
+  (brackets/quotes auto-close on insert)
 
 MODES
 --------------------------------------------------------------------------------
