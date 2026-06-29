@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor / IDE local scratch (Cursor, Claude, VS Code per-user)
+.cursor/
+.claude/
+.vscode/settings.json
+.vscode/*.log
+
+# Test/scratch directories the installer or test scripts might leave behind
+.tmp-*/
+*.bak
+*.bak.[0-9]*
+
+# Direnv / env caches
+.direnv/
+.env.local
+
+# OS / editor swap files
+*.swp
+*.swo
+*~

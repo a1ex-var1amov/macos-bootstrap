@@ -1,25 +1,25 @@
 # macOS Bootstrap + Terminal Config
 
-A complete macOS developer bootstrap: one script that goes from a fresh machine to a fully configured, Catppuccin Frappé-themed terminal environment.
+A complete macOS developer bootstrap: one script that takes a fresh machine to a fully configured, themed terminal environment. Pick one of 20 colour schemes (or a dark/light pair that follows the system appearance) and the installer themes the terminal, prompt, tmux, diffs, Neovim, Cursor, VS Code, and Slack to match.
 
 ## What It Sets Up
 
 | Layer | Tools |
 |---|---|
-| **Terminal** | Ghostty |
+| **Terminal** | Ghostty (with macOS dark/light pair support) |
 | **Shell** | Zsh + autosuggestions + fast-syntax-highlighting + fzf-tab |
 | **Prompt** | Starship (default) or Powerlevel10k — identical look |
-| **Multiplexer** | Tmux with Catppuccin Frappé status bar |
-| **Editor** | Neovim (lazy.nvim, Catppuccin, Treesitter) + Vim fallback |
-| **IDE** | Cursor + VS Code — settings, theme, extensions |
+| **Multiplexer** | Tmux with token-driven theming + helper scripts (git/k8s) |
+| **Editor** | Neovim (lazy.nvim, LSP, Treesitter, telescope, gitsigns, mini.nvim, oil, which-key) + Vim fallback |
+| **IDE** | Cursor + VS Code — settings, theme, extensions, native macOS dark/light autodetect |
 | **History** | atuin — fuzzy search across all sessions, cross-machine sync |
-| **Version control** | Git + delta diffs + gh CLI |
+| **Version control** | Git + delta diffs + gh CLI + gh-dash TUI |
 | **Containers** | Podman (daemonless, rootless, Docker-compatible) |
 | **Kubernetes** | kubectl, k9s, helm, stern, kubectx, kubie, kubecolor |
 | **Languages** | Go, Node.js via fnm, Terraform |
-| **Modern CLI** | bat, eza, ripgrep, fd, delta, btop, duf, dust, lazygit, lazydocker, and more |
+| **Modern CLI** | bat, eza, ripgrep, fd, delta, btop, duf, dust, yazi, procs, lazygit, lazydocker, mosh, httpie, and more |
 
-Everything is themed with **Catppuccin Frappé** — terminal, prompt, tmux, delta diffs, Neovim, VS Code, and Cursor all match.
+Pick a theme PAIR (options 12-20 in the installer) and the whole stack — Ghostty, Cursor, VS Code, Slack, plus tmux/nvim via the `theme-sync` shell function — follows macOS appearance changes natively.
 
 ## Quick Start
 
@@ -73,11 +73,16 @@ The installer is fully interactive by default — walks you through each step, a
 | `top` → `btop` | top | Beautiful system monitor |
 | `df` → `duf` | df | Colourised disk usage |
 | `du` → `dust` | du | Intuitive disk usage tree |
+| `ps` → `procs` | ps | Coloured process list with tree view |
 | `lg` → `lazygit` | git | Full git TUI |
 | `ld` → `lazydocker` | docker | Container TUI (works with Podman) |
+| `ghd` → `gh-dash` | — | GitHub PR/issue dashboard TUI |
+| `y` / `yy` → `yazi` | ranger/nnn | Modern TUI file manager (`yy` cd's the shell into the dir you ended up in) |
 | `tldr` | man | Practical command examples |
 | `jq` · `yq` | — | JSON/YAML processing |
 | `ncdu` | — | Interactive disk space analyser |
+| `mosh` | — | Mobile-friendly ssh that survives suspend/network changes |
+| `httpie` | — | Friendlier `curl` (`http`, `https` CLIs) |
 
 `grep` and `find` are intentionally NOT shadowed — their flags differ from `rg`/`fd` and the muscle-memory hit isn't worth it. Use `\rm`, `\cp`, `\mv` to bypass the safety aliases when you really need to.
 
@@ -192,11 +197,17 @@ Prefix is `Ctrl+b`.
 | `Prefix + e` | Floating terminal popup |
 | `Prefix + g` | Lazygit popup |
 | `Prefix + f` | fzf session switcher popup |
-| `Prefix + m` | Toggle pane zoom |
+| `Prefix + P` | Peek another session in a popup |
+| `Prefix + z` | Toggle pane zoom |
 | `Prefix + y` | Toggle pane sync |
+| `Prefix + T` | Set pane title (pairs with optional `pane-border-status top`) |
+| `Prefix + V` | Paste macOS clipboard into current pane |
+| `Prefix + W` | Save current pane scrollback to `~/tmux-<sess>-...-DATE.log` |
 | `Prefix + r` | Reload config |
-| `v` (copy mode) | Begin selection |
-| `y` (copy mode) | Copy to macOS clipboard |
+| `v` / `y` (copy mode) | Begin selection / copy to macOS clipboard |
+| Double-click (mouse on) | Select word + copy to macOS clipboard |
+| Triple-click (mouse on) | Select line + copy to macOS clipboard |
+| Click session name (mouse on) | Open fzf session switcher |
 
 **Smart session management** (all safe to call from inside tmux — use switch-client):
 
@@ -257,6 +268,18 @@ cp ~/.config/tmux/extras/mouse-on.conf  ~/.config/tmux-mouse.conf  # full mouse
 tmux source ~/.tmux.conf
 ```
 
+### Tmux session persistence (optional, opt-in)
+
+A commented-out TPM + tmux-resurrect + tmux-continuum recipe lives near the bottom of `configs/tmux/tmux.conf`. Uncomment it and run:
+
+```bash
+git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+tmux source ~/.tmux.conf       # or: Prefix + r
+# inside tmux: Prefix + I       # capital I — install the plugins
+```
+
+Sessions/windows/panes (and optionally pane contents) are then snapshotted every 5 minutes and restored automatically on the next tmux start — so you keep your layout across reboots.
+
 ### Neovim plugins
 
 Beyond LSP + treesitter + cmp, the `nvim` config ships with:
@@ -286,23 +309,38 @@ Machine-specific config that you don't want in this repo (cluster aliases, work 
 
 ```
 .
-├── install.sh
+├── install.sh                            One-shot installer (--yes / --update / --help)
+├── Brewfile                              `brew bundle --file=Brewfile` source of truth
+├── tests/check.sh                        Static lint + sanity checks (CI)
+├── .github/workflows/ci.yml              Runs check.sh on every push/PR
 ├── configs/
-│   ├── ghostty/config          → ~/.config/ghostty/config
-│   ├── zsh/zshrc               → ~/.zshrc
-│   ├── starship/starship.toml  → ~/.config/starship.toml
-│   ├── p10k/p10k-starship-style.zsh → ~/.p10k.zsh
-│   ├── vim/vimrc               → ~/.vimrc
-│   ├── nvim/init.lua           → ~/.config/nvim/init.lua
-│   ├── tmux/tmux.conf          → ~/.tmux.conf
+│   ├── ghostty/
+│   │   ├── config-base                   → ~/.config/ghostty/config (theme substituted)
+│   │   └── themes/<scheme>               → ~/.config/ghostty/themes/
+│   ├── zsh/zshrc                         → ~/.zshrc
+│   ├── starship/starship.toml            → ~/.config/starship.toml
+│   ├── p10k/p10k-starship-style.zsh      → ~/.p10k.zsh
+│   ├── vim/vimrc                         → ~/.vimrc
+│   ├── nvim/
+│   │   ├── init.lua                      → ~/.config/nvim/init.lua
+│   │   └── themes/<scheme>.lua           → ~/.config/nvim/lua/themes/, active_theme.lua
+│   ├── tmux/
+│   │   ├── tmux.conf                     → ~/.tmux.conf (token-driven; sources the next 2)
+│   │   ├── tmux.local.conf.example       Drop into ~/.tmux.local.conf for machine tweaks
+│   │   ├── themes/<scheme>.conf          → ~/.config/tmux/themes/, ~/.config/tmux-theme.conf
+│   │   ├── scripts/git-branch.sh         Status-right git segment (cached + timeout)
+│   │   ├── scripts/k8s-context.sh        Status-right k8s segment (cached + timeout)
+│   │   ├── extras/mouse-on.conf          Full mouse mode
+│   │   └── extras/mouse-off.conf         Scroll-only hybrid (see "Tmux mouse mode")
+│   ├── ssh/config-base                   → ~/.ssh/config (only if absent)
 │   ├── git/
-│   │   ├── gitconfig           → ~/.config/git/gitconfig (included via ~/.gitconfig)
-│   │   └── gitignore_global    → ~/.gitignore_global
-│   ├── cursor/settings.json    → ~/Library/Application Support/Cursor/User/settings.json
-│   └── vscode/settings.json    → ~/Library/Application Support/Code/User/settings.json
+│   │   ├── gitconfig                     → ~/.config/git/gitconfig (included via ~/.gitconfig)
+│   │   └── gitignore_global              → ~/.gitignore_global
+│   ├── cursor/settings-base.json         → ~/Library/Application Support/Cursor/User/settings.json
+│   └── vscode/settings-base.json         → ~/Library/Application Support/Code/User/settings.json
 └── cheatsheets/
-    ├── tmux-cheatsheet.txt     → ~/.config/tmux-cheatsheet.txt  (alias: th)
-    └── vim-cheatsheet.txt      → ~/.config/vim-cheatsheet.txt   (alias: vh)
+    ├── tmux-cheatsheet.txt               → ~/.config/tmux-cheatsheet.txt  (alias: th)
+    └── vim-cheatsheet.txt                → ~/.config/vim-cheatsheet.txt   (alias: vh)
 ```
 
 ## Troubleshooting

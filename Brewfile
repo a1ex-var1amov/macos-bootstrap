@@ -34,6 +34,7 @@ brew "fd"
 brew "fnm"
 brew "fzf"
 brew "gh"
+brew "gh-dash"
 brew "git-delta"
 brew "git-filter-repo"
 brew "git-lfs"
@@ -64,6 +65,7 @@ brew "pkgconf"
 brew "podman"
 brew "podman-compose"
 brew "portmidi"
+brew "procs"          # modern, colorized `ps` with tree/search
 # python@3.13 (declared above) is the active interpreter. Older formula versions
 # can be re-added here if a project pins to them.
 brew "qemu"
@@ -84,6 +86,7 @@ brew "trash"
 brew "tree"
 brew "viddy"
 brew "xcodegen"
+brew "yazi"           # blazing-fast TUI file manager (the modern ranger/nnn)
 brew "yq"
 brew "zoxide"
 brew "zsh-autosuggestions"

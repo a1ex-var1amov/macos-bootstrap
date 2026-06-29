@@ -108,7 +108,33 @@ fi
 # zoxide (smart cd)
 (( $+commands[zoxide] )) && eval "$(zoxide init zsh)"
 
-# fzf (fuzzy finder): key bindings and completion
+# fzf (fuzzy finder): key bindings, completion, and global look-and-feel.
+# FZF_DEFAULT_OPTS applies to every fzf invocation (Ctrl+R, Ctrl+T, kx/kn/prc,
+# fzf-tab, tmux popups). Keep this short — flags that need a preview window
+# (kx, kn, prc) override their own --preview-window per call.
+export FZF_DEFAULT_OPTS=" \
+  --height=40% \
+  --layout=reverse \
+  --border=rounded \
+  --info=inline \
+  --prompt=' > ' \
+  --pointer='›' \
+  --marker='›' \
+  --bind=ctrl-/:toggle-preview,ctrl-j:down,ctrl-k:up,alt-a:select-all,alt-d:deselect-all"
+# fd is faster than find and respects .gitignore. Falls back silently if absent.
+if (( $+commands[fd] )); then
+  export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+  export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+  export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
+fi
+# Preview windows for the built-in widgets (Ctrl+T / Alt+C). Uses bat for files
+# and eza for directories when available.
+if (( $+commands[bat] )); then
+  export FZF_CTRL_T_OPTS="--preview 'bat --color=always --style=numbers --line-range=:200 {}' --preview-window=right:60%"
+fi
+if (( $+commands[eza] )); then
+  export FZF_ALT_C_OPTS="--preview 'eza --tree --level=2 --color=always {} | head -200' --preview-window=right:50%"
+fi
 [[ -r "$_BREW_PREFIX/opt/fzf/shell/key-bindings.zsh" ]] && source "$_BREW_PREFIX/opt/fzf/shell/key-bindings.zsh"
 [[ -r "$_BREW_PREFIX/opt/fzf/shell/completion.zsh"   ]] && source "$_BREW_PREFIX/opt/fzf/shell/completion.zsh"
 
@@ -299,6 +325,31 @@ fi
 
 if (( $+commands[lazydocker] )); then
   alias ld="lazydocker"
+fi
+
+# gh-dash — GitHub PR/issue dashboard TUI (one screen for all your PRs).
+if (( $+commands[gh-dash] )); then
+  alias ghd="gh-dash"
+fi
+
+# procs — modern ps with colour, tree view, search, and watch mode.
+if (( $+commands[procs] )); then
+  alias ps="procs"
+  alias pst="procs --tree"
+fi
+
+# yazi — TUI file manager. `yy` opens it and cd's the shell to its exit dir
+# (lets you "navigate visually, return to shell where you ended up").
+if (( $+commands[yazi] )); then
+  alias y="yazi"
+  yy() {
+    local tmp; tmp=$(mktemp -t "yazi-cwd.XXXXXX")
+    yazi "$@" --cwd-file="$tmp"
+    if cwd=$(command cat -- "$tmp" 2>/dev/null) && [[ -n "$cwd" && "$cwd" != "$PWD" ]]; then
+      builtin cd -- "$cwd"
+    fi
+    \rm -f -- "$tmp"
+  }
 fi
 
 # Podman — Docker-compatible CLI (daemonless, rootless, OpenShift-native)

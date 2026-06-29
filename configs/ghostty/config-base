@@ -149,7 +149,7 @@ link-url = true
 #   border         flash the window border
 #   no-audio       skip the system beep
 #   attention      bounce the dock icon
-#   title          add a "🔔" to the surface title until acknowledged
+#   title          mark the surface title until acknowledged
 bell-features        = border,no-audio,attention,title
 desktop-notifications = false
 
@@ -157,5 +157,7 @@ desktop-notifications = false
 # LOCAL OVERRIDES (not tracked in git)
 # Create ~/.config/ghostty/config.local to override any setting above.
 # Useful for: different font size on external monitor, custom keybinds, etc.
+# The `?` prefix marks the include optional — Ghostty won't error on launch
+# when the file is absent (and most fresh installs won't have it).
 # =============================================================================
-config-file = ~/.config/ghostty/config.local
+config-file = ?~/.config/ghostty/config.local

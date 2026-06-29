@@ -188,7 +188,7 @@ done
 
 # Modern CLI replacements
 MISSING_CLI=()
-for f in bat eza ripgrep fd git-delta btop jq yq ncdu duf dust tldr lazygit lazydocker podman podman-compose; do
+for f in bat eza ripgrep fd git-delta btop jq yq ncdu duf dust tldr lazygit lazydocker podman podman-compose yazi procs gh-dash; do
     is_installed "$f" || MISSING_CLI+=("$f")
 done
 

@@ -45,6 +45,17 @@ if command -v shellcheck &>/dev/null; then
     shellcheck -S warning -s bash -e SC2088 "$REPO/install.sh" \
         && ok "install.sh shellcheck" \
         || fail "install.sh shellcheck warnings/errors"
+    # Tmux helper scripts — strict, no exceptions
+    for s in "$REPO"/configs/tmux/scripts/*.sh; do
+        shellcheck -S warning -s bash "$s" \
+            && ok "${s##*/} shellcheck" \
+            || fail "${s##*/} shellcheck warnings/errors"
+    done
+    # Test script itself. SC2088 disabled: we grep tmux.conf for literal `~/...`
+    # paths (which are tmux's source-file directives, not shell expansions).
+    shellcheck -S warning -s bash -e SC2088 "$REPO/tests/check.sh" \
+        && ok "tests/check.sh shellcheck" \
+        || fail "tests/check.sh shellcheck warnings/errors"
 else
     skip "shellcheck not installed — brew install shellcheck"
 fi
@@ -54,7 +65,7 @@ fi
 section "Required files"
 
 REQUIRED_FILES=(
-    configs/ghostty/config
+    configs/ghostty/config-base
     configs/zsh/zshrc
     configs/starship/starship.toml
     configs/p10k/p10k-starship-style.zsh
@@ -69,8 +80,8 @@ REQUIRED_FILES=(
     configs/ssh/config-base
     configs/git/gitconfig
     configs/git/gitignore_global
-    configs/cursor/settings.json
-    configs/vscode/settings.json
+    configs/cursor/settings-base.json
+    configs/vscode/settings-base.json
     cheatsheets/tmux-cheatsheet.txt
     cheatsheets/vim-cheatsheet.txt
 )

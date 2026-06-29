@@ -13,6 +13,7 @@ SHELL ALIASES (custom)
                     (great for side-by-side multi-cluster work)
   tls               List all sessions
   tks NAME          Kill session "NAME"
+  tad               Attach + detach other clients (steal session)
   tka               Kill ALL sessions  (asks for confirmation)
   th / tmux-help    Show this cheatsheet
   vh / vim-help     Show vim cheatsheet

@@ -55,8 +55,11 @@ cp configs/nvim/themes/tokyo-night.lua ~/.config/nvim/lua/active_theme.lua
 | `configs/tmux/tmux.conf` | `~/.tmux.conf` |
 | `configs/git/gitconfig` | `~/.config/git/gitconfig` (included via `~/.gitconfig`) |
 | `configs/git/gitignore_global` | `~/.gitignore_global` |
-| `configs/cursor/settings.json` | `~/Library/Application Support/Cursor/User/settings.json` |
-| `configs/vscode/settings.json` | `~/Library/Application Support/Code/User/settings.json` |
+| `configs/cursor/settings-base.json` | `~/Library/Application Support/Cursor/User/settings.json` (rendered through `_render_vscode_settings`) |
+| `configs/vscode/settings-base.json` | `~/Library/Application Support/Code/User/settings.json` (rendered through `_render_vscode_settings`) |
+| `configs/ghostty/config-base` | `~/.config/ghostty/config` (theme line substituted by `sed`) |
+| `configs/ssh/config-base` | `~/.ssh/config` (only if absent) |
+| `configs/tmux/extras/mouse-{on,off}.conf` | `~/.config/tmux/extras/` (one of them copied to `~/.config/tmux-mouse.conf`) |
 | `cheatsheets/*.txt` | `~/.config/*.txt` |
 
 ## Architecture Notes
@@ -139,7 +142,28 @@ Beyond aliases, the zshrc defines these user-facing functions:
 - Internals: `_shorten_k8s_context`, `_get_k8s_context`, `_set_terminal_title`, `_fnm_lazy_init`
 
 ### Tool Aliases with Fallbacks
-All modern CLI replacements (`bat`, `eza`, `rg`, `fd`, `btop`, `duf`, `delta`, etc.) use `(( $+commands[tool] ))` guards so the config degrades gracefully when tools are missing.
+All modern CLI replacements (`bat`, `eza`, `rg`, `fd`, `btop`, `duf`, `delta`, `yazi`, `procs`, `gh-dash`, etc.) use `(( $+commands[tool] ))` guards so the config degrades gracefully when tools are missing.
+
+### FZF defaults
+`FZF_DEFAULT_OPTS` is exported once near the top of `zshrc` so every fzf invocation (Ctrl+R, Ctrl+T, Alt+C, `kx`, `kn`, `prc`, fzf-tab, tmux popups) gets the same height/layout/border/preview-toggle keybinds. Per-call `--preview-window` overrides still win. Ctrl+T uses `bat` for previews when available; Alt+C uses `eza --tree`.
+
+### Tmux universal bindings (keyboard, both mouse modes)
+Added in `tmux.conf` so they're always available:
+- `Prefix + V` — paste macOS clipboard (`pbpaste | load-buffer - && paste-buffer`)
+- `Prefix + W` — `capture-pane -p -S -` into `~/tmux-<sess>-w<idx>p<idx>-<ts>.log`
+- `Prefix + T` — `command-prompt -p "pane title:" "select-pane -T '%%'"`
+- A commented `pane-border-status top` recipe near `Prefix + T` so users can opt into visible pane titles.
+
+### Tmux mouse-on extras
+`mouse-on.conf` adds, on top of the basics:
+- `DoubleClick1Pane` / `TripleClick1Pane` — select word/line, copy to pbcopy. Both guard on `pane_in_mode` / `mouse_any_flag` so vim/fzf/htop still see their own mouse events.
+- `MouseDown1StatusLeft` — fzf session-switcher popup (mouse-accessible mirror of `Prefix + f`).
+
+### Clock-mode colour resolution
+`clock-mode-colour` is a raw-colour option in tmux — it does NOT expand `#{@token}` format strings. After sourcing the theme file, `tmux.conf` runs a one-liner `run-shell` that reads `#{@accent}` via `display-message -p` and feeds the literal hex into `set -g clock-mode-colour`. Do NOT add `set -g clock-mode-colour "#{@accent}"` back — it throws `bad colour: #{@accent}` on every reload.
+
+### Optional tmux session persistence
+A commented TPM + tmux-resurrect + tmux-continuum block lives near the bottom of `tmux.conf` (after the theme source-file). Users opt in by uncommenting and running the TPM clone one-liner from the README. Default ships disabled to keep tmux's startup zero-dependency.
 
 ### Terminal Title
 Title is set via `zle-line-init` (fires just before each prompt) and `preexec` hook (shows running command). Format: `folder | k8s-context`. Inside tmux, uses pass-through escape sequences to update both the tmux window name and the outer terminal (Ghostty).

@@ -132,7 +132,8 @@ number_threshold = 1
 disabled = false
 format = "[$symbol($version )]($style)"
 style = "bright-cyan"
-symbol = "🐹 "
+# Nerd Font glyph (Devicons gopher). Falls back to a box on non-Nerd fonts.
+symbol = " "
 
 [nodejs]
 disabled = false
