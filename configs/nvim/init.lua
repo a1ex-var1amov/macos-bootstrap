@@ -128,18 +128,35 @@ require("lazy").setup({
 
   -- -------------------------------------------------------------------------
   -- Treesitter — proper syntax highlighting and indentation
+  -- Requires a C compiler (xcode-select --install on macOS) to compile parsers.
+  -- :TSUpdateSync (instead of :TSUpdate) compiles parsers synchronously during
+  -- install so they're ready before the first buffer is opened — avoids the
+  -- "Parser could not be created for buffer N and language X" race that fires
+  -- when `vi foo.yaml` runs the FileType autocmd before async parser compile
+  -- has finished.
   -- -------------------------------------------------------------------------
   {
     "nvim-treesitter/nvim-treesitter",
     branch = "master",
-    build = ":TSUpdate",
+    build  = ":TSUpdateSync",
     opts = {
-      highlight        = { enable = true },
-      indent           = { enable = true },
       ensure_installed = {
         "bash", "dockerfile", "go", "json", "lua",
         "markdown", "markdown_inline", "python", "toml", "yaml", "vim", "vimdoc",
       },
+      sync_install = false,  -- install missing parsers in the background
+      auto_install = true,   -- auto-install on FileType when missing (e.g. .tf, .nix)
+      highlight = {
+        enable = true,
+        -- Safety net: if a parser isn't installed/loadable yet (cold start race,
+        -- compiler missing, or unknown filetype), silently skip highlighting for
+        -- that buffer instead of throwing inside the BufNewFile autocmd.
+        disable = function(lang, _)
+          return not pcall(vim.treesitter.language.add, lang)
+        end,
+        additional_vim_regex_highlighting = false,
+      },
+      indent = { enable = true },
     },
     config = function(_, opts)
       require("nvim-treesitter.configs").setup(opts)

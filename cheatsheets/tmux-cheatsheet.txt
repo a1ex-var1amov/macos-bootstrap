@@ -101,6 +101,20 @@ NESTED TMUX
                     Use this to address a tmux running inside a pane, or
                     any program that listens for Ctrl+b.
 
+MOUSE MODE  (chosen at install time, lives in ~/.config/tmux-mouse.conf)
+--------------------------------------------------------------------------------
+  on   (default)    Click panes, drag borders, wheel scrolls tmux history,
+                    right-click = tmux context menu, OSC 52 clipboard pass.
+                    Hold ⌥ Option while selecting to bypass tmux and use
+                    Ghostty-native selection.
+  off               Tmux ignores the mouse — Ghostty owns selection, scroll,
+                    and right-click. Use Prefix + [ then v/y to copy.
+
+  Flip without reinstalling:
+    cp ~/.config/tmux/extras/mouse-on.conf  ~/.config/tmux-mouse.conf
+    cp ~/.config/tmux/extras/mouse-off.conf ~/.config/tmux-mouse.conf
+    tmux source ~/.tmux.conf
+
 MISC
 --------------------------------------------------------------------------------
   Prefix + r        Reload config (custom)
@@ -110,6 +124,8 @@ MISC
 
 ================================================================================
   Custom bindings are marked with (custom).
-  Config: ~/.tmux.conf  |  Theme tokens: ~/.config/tmux-theme.conf
-  Helper scripts:       ~/.config/tmux/scripts/
+  Config: ~/.tmux.conf
+  Theme tokens:   ~/.config/tmux-theme.conf
+  Mouse mode:     ~/.config/tmux-mouse.conf
+  Helper scripts: ~/.config/tmux/scripts/
 ================================================================================

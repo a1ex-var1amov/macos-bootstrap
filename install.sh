@@ -6,8 +6,12 @@
 # Usage:
 #   ./install.sh                  Full interactive install (default)
 #   ./install.sh --yes            Non-interactive — accept all defaults
+#                                 (prompt: starship, theme: catppuccin-frappe,
+#                                  tmux mouse: on, tmux autostart: off)
 #   ./install.sh --update         Update mode — skip install prompts, only
-#                                 redeploy config files + themes + scripts
+#                                 redeploy config files + themes + scripts.
+#                                 Previously-chosen prompt / color theme /
+#                                 tmux mouse mode are preserved.
 #   ./install.sh --update --yes   Quietly refresh configs from this repo
 #
 
@@ -37,9 +41,15 @@ macOS Bootstrap + Terminal Config Installer
 
 Usage:
   ./install.sh                  Full interactive install (default)
-  ./install.sh --yes            Non-interactive — accept all defaults
+  ./install.sh --yes            Non-interactive — accept all defaults:
+                                  prompt = starship
+                                  theme  = catppuccin-frappe
+                                  tmux mouse mode = on
+                                  tmux autostart  = off
   ./install.sh --update         Update mode — skip install prompts, only
-                                redeploy config files + themes + scripts
+                                redeploy config files + themes + scripts.
+                                Previously-chosen prompt / theme / tmux
+                                mouse mode are preserved.
   ./install.sh --update --yes   Quietly refresh configs from this repo
 EOF
             exit 0 ;;
@@ -695,6 +705,7 @@ mkdir -p ~/.config/nvim/lua/themes
 mkdir -p ~/.config/nvim/lua
 mkdir -p ~/.config/tmux/themes
 mkdir -p ~/.config/tmux/scripts
+mkdir -p ~/.config/tmux/extras
 mkdir -p ~/.config/git
 mkdir -p ~/.vim/undo
 mkdir -p ~/.zsh/themes
@@ -753,6 +764,43 @@ backup_file ~/.vimrc
 cp "$SCRIPT_DIR/configs/vim/vimrc" ~/.vimrc
 print_success "Vim config"
 
+# ── Tmux mouse / context-menu mode ───────────────────────────────────────────
+# Two flavours, chosen here once and saved to ~/.config/terminal-tmux-mouse
+# so subsequent --update runs preserve the choice.
+#
+#   on   "Full tmux mouse mode"  — click panes, drag-resize, wheel-scrolls-
+#                                  buffer, right-click context menu, OSC 52
+#                                  clipboard pass-through. (Default.)
+#   off  "Normal terminal"       — tmux ignores the mouse entirely. Selection,
+#                                  scrolling, and right-click are Ghostty's.
+#
+# Either way you can still copy with Prefix + [ -> v -> y, paste with Prefix + ].
+TMUX_MOUSE_CHOICE=""
+if [[ -f "$HOME/.config/terminal-tmux-mouse" ]]; then
+    TMUX_MOUSE_CHOICE="$(cat "$HOME/.config/terminal-tmux-mouse" 2>/dev/null)"
+fi
+
+if (( UPDATE_ONLY )) && [[ -n "$TMUX_MOUSE_CHOICE" ]]; then
+    print_status "Keeping tmux mouse mode: $TMUX_MOUSE_CHOICE"
+else
+    echo ""
+    echo "Tmux mouse / context-menu behaviour:"
+    echo "  1) Full tmux mouse mode  (default — click panes, drag-resize,"
+    echo "                            wheel scrolls tmux history, right-click menu)"
+    echo "  2) Normal terminal       (tmux ignores the mouse — Ghostty owns"
+    echo "                            selection, scroll, and right-click)"
+    echo ""
+    echo "  Tip: even with option 1, hold ⌥ Option while selecting in Ghostty"
+    echo "       to do a native terminal selection (good for long wrapped URLs)."
+    echo ""
+    _tmc_pick="$(ask_value "Pick [1/2] (default 1): " "1")"
+    case "$_tmc_pick" in
+        2) TMUX_MOUSE_CHOICE="off" ;;
+        *) TMUX_MOUSE_CHOICE="on"  ;;
+    esac
+    echo "$TMUX_MOUSE_CHOICE" > "$HOME/.config/terminal-tmux-mouse"
+fi
+
 # Tmux — install config + helper scripts + all theme files + active theme.
 # Theme files are color-only token overrides; status-bar/binding logic lives
 # in tmux.conf and reads those tokens. Helper scripts back the status bar's
@@ -767,7 +815,14 @@ for _tmux_script in "$SCRIPT_DIR/configs/tmux/scripts"/*.sh; do
     cp "$_tmux_script" ~/.config/tmux/scripts/
     chmod +x ~/.config/tmux/scripts/"${_tmux_script##*/}"
 done
-print_success "Tmux config + theme: $COLOR_THEME (+ helper scripts)"
+# Ship both mouse-*.conf snippets (so the user can flip later without re-running
+# the installer) and activate the one they picked.
+for _tmux_extra in "$SCRIPT_DIR/configs/tmux/extras"/*.conf; do
+    cp "$_tmux_extra" ~/.config/tmux/extras/
+done
+cp "$SCRIPT_DIR/configs/tmux/extras/mouse-${TMUX_MOUSE_CHOICE}.conf" \
+   ~/.config/tmux-mouse.conf
+print_success "Tmux config + theme: $COLOR_THEME, mouse=$TMUX_MOUSE_CHOICE"
 
 # Git — config (delta, globals, aliases) + global gitignore
 backup_file ~/.config/git/gitconfig
@@ -1046,6 +1101,10 @@ echo "  Available:
     Catppuccin : catppuccin-frappe  catppuccin-macchiato  catppuccin-mocha  catppuccin-latte
     Tokyo Night: tokyo-night  tokyo-night-storm  tokyo-night-moon  tokyo-night-day
     Rosé Pine  : rose-pine  rose-pine-moon  rose-pine-dawn"
+echo ""
+echo "Tmux mouse mode: $TMUX_MOUSE_CHOICE"
+echo "  To flip later: cp ~/.config/tmux/extras/mouse-<on|off>.conf ~/.config/tmux-mouse.conf"
+echo "                 tmux source ~/.tmux.conf"
 echo ""
 echo "History (powered by atuin — syncs across work + home laptop):"
 echo "  atuin register    — create an account for cross-machine sync"

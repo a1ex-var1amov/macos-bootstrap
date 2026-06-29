@@ -63,6 +63,8 @@ REQUIRED_FILES=(
     configs/tmux/tmux.conf
     configs/tmux/scripts/git-branch.sh
     configs/tmux/scripts/k8s-context.sh
+    configs/tmux/extras/mouse-on.conf
+    configs/tmux/extras/mouse-off.conf
     configs/git/gitconfig
     configs/git/gitignore_global
     configs/cursor/settings.json
@@ -113,6 +115,18 @@ while IFS= read -r script_ref; do
         fail "tmux.conf references missing script: $script_ref"
     fi
 done < <(grep -oE '~/.config/tmux/scripts/[a-zA-Z0-9_-]+\.sh' "$REPO/configs/tmux/tmux.conf" | sort -u)
+
+# tmux.conf must source the split-out theme + mouse files so the install.sh
+# choices actually take effect.
+section "Tmux source-file directives"
+
+for required in "~/.config/tmux-theme.conf" "~/.config/tmux-mouse.conf"; do
+    if grep -qF "source-file -q $required" "$REPO/configs/tmux/tmux.conf"; then
+        ok "tmux.conf sources $required"
+    else
+        fail "tmux.conf is missing: source-file -q $required"
+    fi
+done
 
 # Each ghostty theme referenced by install.sh must exist in configs/ghostty/themes/.
 section "Ghostty theme references"

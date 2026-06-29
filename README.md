@@ -217,6 +217,22 @@ For viewing two clusters side-by-side: open two Ghostty splits (`Cmd+D`), run `t
 
 Each theme file is just 11 color tokens (`@bg`, `@accent`, etc.) — see `configs/tmux/themes/catppuccin-frappe.conf` for the template. The status bar, pane borders, and popup colors all live once in `tmux.conf` and read these tokens, so a new theme is a 12-line file.
 
+### Tmux mouse mode (chosen at install time)
+
+The installer asks whether you want tmux to intercept the mouse at all. The choice is saved to `~/.config/terminal-tmux-mouse` and preserved across `--update` runs.
+
+| Mode | What tmux does | What Ghostty does |
+|---|---|---|
+| **on** (default) | Click panes to focus, drag borders to resize, wheel scrolls tmux's full history, right-click opens tmux's context menu, OSC 52 clipboard passthrough | Selection only works while holding `⌥ Option` |
+| **off** ("normal terminal") | Nothing — tmux ignores the mouse | Owns selection, scroll, right-click — feels like a plain Ghostty window |
+
+Either way, keyboard copy still works (`Prefix + [` → `v` → `y`). To flip later without re-running the installer:
+
+```bash
+cp ~/.config/tmux/extras/mouse-off.conf ~/.config/tmux-mouse.conf
+tmux source ~/.tmux.conf
+```
+
 ### Neovim plugins
 
 Beyond LSP + treesitter + cmp, the `nvim` config ships with:

@@ -92,6 +92,18 @@ Adding a new theme = copy any existing theme file and edit the 11 hex values. Th
 
 The installer copies them to `~/.config/tmux/scripts/` and ensures the executable bit is set.
 
+### Tmux Mouse Mode (`~/.config/tmux-mouse.conf`)
+`tmux.conf` does NOT hardcode `set -g mouse on` / `set -g set-clipboard on`. Instead it sources `~/.config/tmux-mouse.conf`, which install.sh writes from one of two bundled snippets:
+- `configs/tmux/extras/mouse-on.conf` — full tmux mouse UX (click, scroll, drag-resize, context menu, OSC 52 clipboard)
+- `configs/tmux/extras/mouse-off.conf` — tmux ignores the mouse entirely; Ghostty owns selection / scroll / right-click
+
+The chosen mode is persisted to `~/.config/terminal-tmux-mouse` (contents: `on` or `off`) so `--update` runs don't re-prompt. To flip manually:
+```bash
+cp ~/.config/tmux/extras/mouse-{off,on}.conf ~/.config/tmux-mouse.conf
+tmux source ~/.tmux.conf
+```
+When adding mouse-related bindings, put them in the corresponding `mouse-*.conf` file, not in `tmux.conf`, so the "normal terminal" mode stays clean.
+
 ### Tmux Session Helpers (`ts`, `tsp`, `tsk`, `tka`)
 All four functions in `.zshrc` are safe to call from inside an existing tmux client — they detect `$TMUX` and use `switch-client` instead of `attach`. `tsk` creates a session with a specific `KUBECONFIG` exported in its environment for multi-cluster workflows. `tka` always prompts before killing the server.
 
