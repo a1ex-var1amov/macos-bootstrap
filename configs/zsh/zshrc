@@ -55,10 +55,15 @@ setopt EXTENDED_HISTORY          # save timestamp and duration
 setopt EXTENDED_GLOB             # better globbing
 setopt INTERACTIVE_COMMENTS      # allow comments in interactive shell
 setopt AUTO_PUSHD PUSHD_SILENT PUSHD_IGNORE_DUPS
-setopt CORRECT                   # correct typos in commands
+# CORRECT prompts "did you mean X?" on every command typo. Annoying with custom
+# scripts whose names happen to be Levenshtein-close to system binaries (e.g.
+# `mkdir` -> `mksh`). Opt-in via ~/.zshrc.local with `setopt CORRECT` if wanted.
+# setopt CORRECT
 setopt COMPLETE_IN_WORD          # complete from both ends of a word
 setopt ALWAYS_TO_END             # move cursor to end after completion
-setopt AUTO_CD                   # cd by typing directory name if it's not a command
+# AUTO_CD turns a bare directory name into `cd <dir>`. Convenient but means
+# typos silently change directory. Opt-in via ~/.zshrc.local with `setopt AUTO_CD`.
+# setopt AUTO_CD
 setopt AUTO_LIST                 # automatically list choices on ambiguous completion
 setopt AUTO_MENU                 # show completion menu on successive tab presses
 setopt NO_BEEP                   # disable beep on error
@@ -444,7 +449,11 @@ alias mv="mv -i"
 
 # Misc
 alias reload="source ~/.zshrc"
-path()    { print -l $path }                         # one $PATH entry per line
+# lpath — print one $PATH entry per line. Named lpath (not path!) because zsh
+# has a special tied array `$path` for $PATH; shadowing it with a function
+# named `path` works for the trivial use-case but breaks any code that does
+# `path=(... $path)` afterwards. Safer to keep the array sacred.
+lpath()   { print -l $path }
 alias now="date '+%Y-%m-%d %H:%M:%S'"
 
 # Cheat sheets

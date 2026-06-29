@@ -1,0 +1,40 @@
+# Example ~/.tmux.local.conf
+#
+# tmux.conf sources this file at the very end (via `source-file -q`) so any
+# setting here wins over the shipped config. Use it for machine-specific
+# tweaks you don't want to track in the dotfiles repo.
+#
+# Copy this file to ~/.tmux.local.conf to enable it:
+#   cp configs/tmux/tmux.local.conf.example ~/.tmux.local.conf
+# Then `Prefix + r` (or `tmux source ~/.tmux.conf`) to apply.
+
+# ── Common overrides ─────────────────────────────────────────────────────────
+
+# Different prefix on this machine (e.g. work laptop with conflicting keybinds):
+# unbind C-b
+# set -g prefix C-a
+# bind  C-a send-prefix
+
+# Persistent session on boot (with tmux-resurrect plugin — not installed by
+# default; brew install tpm and add to plugins).
+
+# Status-bar tweaks per-host: show hostname in status-left.
+# set -g status-left "#[fg=#{@bg},bg=#{@accent},bold] #h:#S "
+
+# Per-machine theme override without touching the dotfiles repo:
+# source-file ~/.config/tmux/themes/rose-pine-moon.conf
+
+# SSH agent forwarding into long-lived sessions: re-export DISPLAY / SSH_AUTH_SOCK
+# whenever a new client attaches.
+# set -ga update-environment ' SSH_AUTH_SOCK SSH_AGENT_PID DISPLAY'
+
+# Disable activity monitoring on noisy windows:
+# setw -g monitor-activity off
+# set  -g visual-activity off
+
+# Pane-border lines (heavy / double / simple / number):  requires tmux >= 3.3
+# set -g pane-border-lines heavy
+
+# Extra keybindings — examples:
+# bind | split-window -h -c "#{pane_current_path}" -p 30  # 30% width split
+# bind R command-prompt -p 'rename session:' "rename-session %%"

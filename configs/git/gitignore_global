@@ -28,7 +28,11 @@
 .nvimrc.lua
 .idea/
 *.iml
-.vscode/
+# .vscode/ — only ignore per-user files, NOT the whole folder. Many projects
+# commit shared launch.json / tasks.json / extensions.json for onboarding.
+.vscode/settings.json
+.vscode/*.log
+.history/
 *.code-workspace
 
 # Compiled / build artifacts
@@ -47,3 +51,37 @@ yarn-debug.log*
 
 # Dependency directories (belt-and-suspenders — project .gitignore handles these too)
 node_modules/
+
+# direnv — per-directory env caches (per-machine, never commit)
+.direnv/
+
+# Terraform — state and provider caches are machine-local
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars.local
+crash.log
+crash.*.log
+
+# Python coverage / build outputs
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+dist/
+build/
+*.egg-info/
+
+# JS test/build artifacts
+.nyc_output/
+coverage/
+
+# Misc tool caches
+.cache/
+.parcel-cache/
+.next/
+
+# Cursor / Claude scratchpads (machine-local)
+.cursor/
+.claude/

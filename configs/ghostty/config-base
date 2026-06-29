@@ -111,6 +111,12 @@ keybind = super+shift+k=reset
 keybind = super+shift+c=copy_to_clipboard
 keybind = super+shift+v=paste_from_clipboard
 
+# Jump to previous/next prompt — uses shell-integration markers that zsh writes
+# around each prompt. Massive QoL improvement: leap over long command output
+# without scrolling. Requires `shell-integration = zsh` (set above).
+keybind = super+up=jump_to_prompt:-1
+keybind = super+down=jump_to_prompt:1
+
 # Quick Terminal — drop-down terminal accessible from anywhere in macOS.
 # Requires Accessibility permission the first time (System Settings >
 # Privacy & Security > Accessibility). Toggle with Cmd+`.
@@ -138,7 +144,13 @@ bold-is-bright = false
 # Clickable links
 link-url = true
 
-# Bell - flash screen instead of sound
+# Bell behaviour — flash the window border + bounce dock icon when something
+# fires a BEL (^G) in a non-focused tab. Audio bell stays off (no system beep).
+#   border         flash the window border
+#   no-audio       skip the system beep
+#   attention      bounce the dock icon
+#   title          add a "🔔" to the surface title until acknowledged
+bell-features        = border,no-audio,attention,title
 desktop-notifications = false
 
 # =============================================================================

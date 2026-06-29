@@ -408,19 +408,30 @@ else
     fi
 fi
 
-# ~/.ssh/config — ensures key is auto-loaded from macOS keychain after reboot
+# ~/.ssh/config — keychain integration + ControlMaster connection reuse +
+# Include directives for per-host snippets (~/.ssh/config.d/*.conf) and a
+# personal override file (~/.ssh/config.local). Template ships in
+# configs/ssh/config-base; we only install it if no config exists yet (so we
+# never clobber a user's hand-tuned setup).
+mkdir -p ~/.ssh ~/.ssh/config.d ~/.ssh/sockets
+chmod 700 ~/.ssh ~/.ssh/config.d ~/.ssh/sockets
 SSH_CONFIG="$HOME/.ssh/config"
-if [[ ! -f "$SSH_CONFIG" ]] || ! grep -q "UseKeychain" "$SSH_CONFIG" 2>/dev/null; then
-    mkdir -p ~/.ssh && chmod 700 ~/.ssh
+if [[ ! -f "$SSH_CONFIG" ]]; then
+    cp "$SCRIPT_DIR/configs/ssh/config-base" "$SSH_CONFIG"
+    chmod 600 "$SSH_CONFIG"
+    print_success "~/.ssh/config installed (keychain + ControlMaster + Includes)"
+elif ! grep -q "UseKeychain" "$SSH_CONFIG" 2>/dev/null; then
+    # Existing config without UseKeychain — append the minimum so keys persist
+    # across reboots, but don't touch anything else.
     cat >> "$SSH_CONFIG" <<'EOF'
 
 Host *
   AddKeysToAgent yes
-  UseKeychain yes
-  IdentityFile ~/.ssh/id_ed25519
+  UseKeychain    yes
+  IdentityFile   ~/.ssh/id_ed25519
 EOF
     chmod 600 "$SSH_CONFIG"
-    print_success "~/.ssh/config created (keys persist across reboots)"
+    print_success "~/.ssh/config appended with keychain settings"
 else
     print_success "~/.ssh/config already configured"
 fi

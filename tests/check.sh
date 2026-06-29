@@ -65,6 +65,8 @@ REQUIRED_FILES=(
     configs/tmux/scripts/k8s-context.sh
     configs/tmux/extras/mouse-on.conf
     configs/tmux/extras/mouse-off.conf
+    configs/tmux/tmux.local.conf.example
+    configs/ssh/config-base
     configs/git/gitconfig
     configs/git/gitignore_global
     configs/cursor/settings.json

@@ -5,7 +5,10 @@
 -- BOOTSTRAP lazy.nvim
 -- =============================================================================
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not vim.loop.fs_stat(lazypath) then
+-- vim.uv replaces vim.loop in nvim 0.10+. Keep a fallback so the config still
+-- bootstraps on older nvim versions (some Linux distros still ship 0.9.x).
+local uv = vim.uv or vim.loop
+if not uv.fs_stat(lazypath) then
   vim.fn.system({
     "git", "clone", "--filter=blob:none",
     "https://github.com/folke/lazy.nvim.git",
@@ -214,8 +217,9 @@ require("lazy").setup({
           vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename,       o)
           vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action,  o)
           vim.keymap.set("n", "<leader>d",  vim.diagnostic.open_float, o)
-          vim.keymap.set("n", "[d",         vim.diagnostic.goto_prev, o)
-          vim.keymap.set("n", "]d",         vim.diagnostic.goto_next, o)
+          -- vim.diagnostic.goto_prev/next were deprecated in 0.11; use jump().
+          vim.keymap.set("n", "[d", function() vim.diagnostic.jump({ count = -1, float = true }) end, o)
+          vim.keymap.set("n", "]d", function() vim.diagnostic.jump({ count =  1, float = true }) end, o)
           vim.keymap.set("n", "<leader>f",
             function() vim.lsp.buf.format({ async = true }) end, o)
         end,
@@ -527,9 +531,10 @@ autocmd("FileType", { group = ft, pattern = "markdown",
   command = "setlocal wrap linebreak" })
 
 -- Flash highlight on yank
+-- vim.hl replaces vim.highlight in nvim 0.11+. Fallback keeps older nvim happy.
 autocmd("TextYankPost", {
   group    = augroup("highlight_yank", { clear = true }),
-  callback = function() vim.highlight.on_yank() end,
+  callback = function() (vim.hl or vim.highlight).on_yank() end,
 })
 
 -- Restore cursor position when reopening a file

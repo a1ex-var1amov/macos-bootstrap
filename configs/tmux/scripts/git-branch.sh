@@ -20,6 +20,14 @@ else
     TIMEOUT=""
 fi
 
+# symbolic-ref handles normal branches. If we're on a detached HEAD (mid-rebase,
+# checked out a tag, etc.) it returns nothing — fall back to a short SHA prefixed
+# with `:` so the status bar still gives location feedback.
 branch=$($TIMEOUT git -C "$path" symbolic-ref --short HEAD 2>/dev/null | head -1 || true)
-[[ -n "$branch" ]] && printf '%s' "$branch"
+if [[ -z "$branch" ]]; then
+    sha=$($TIMEOUT git -C "$path" rev-parse --short HEAD 2>/dev/null || true)
+    [[ -n "$sha" ]] && printf ':%s' "$sha"
+else
+    printf '%s' "$branch"
+fi
 exit 0

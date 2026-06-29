@@ -57,7 +57,9 @@ show_milliseconds = true
 format = "[$virtualenv]($style) [$version]($style) "
 style = "bright-black"
 detect_files = ["requirements.txt", "pyproject.toml", "Pipfile", "setup.py", "tox.ini"]
-detect_folders = [".venv", "venv", "env"]
+# "env" is too generic — fires on /etc/env-files, dotfile repos, etc. Stick to
+# the two canonical virtualenv folder names.
+detect_folders = [".venv", "venv"]
 
 [kubernetes]
 disabled = false
