@@ -598,113 +598,116 @@ esac
 echo "export COLOR_THEME=$COLOR_THEME" > ~/.config/terminal-color-theme
 print_success "Color scheme: $COLOR_THEME (Ghostty: $GHOSTTY_THEME)"
 
-# Write dark/light pair info for theme-sync (only for pair choices)
+# Write dark/light pair info for theme-sync + Cursor/VSCode auto-detect.
+# THEME_DARK / THEME_LIGHT here drive: (a) the shell `theme-sync` function for
+# tmux/nvim/bat/delta, and (b) `workbench.preferred{Dark,Light}ColorTheme` in
+# Cursor and VS Code (via $VSCODE_DARK_THEME / $VSCODE_LIGHT_THEME below) so
+# the IDEs follow macOS appearance changes natively.
 case "$COLOR_CHOICE" in
-  12) printf 'export THEME_DARK=catppuccin-mocha\nexport THEME_LIGHT=catppuccin-latte\n'  > ~/.config/terminal-theme-pair ;;
-  13) printf 'export THEME_DARK=tokyo-night\nexport THEME_LIGHT=tokyo-night-day\n'         > ~/.config/terminal-theme-pair ;;
-  14) printf 'export THEME_DARK=tokyo-night-storm\nexport THEME_LIGHT=tokyo-night-day\n'   > ~/.config/terminal-theme-pair ;;
-  15) printf 'export THEME_DARK=tokyo-night-moon\nexport THEME_LIGHT=tokyo-night-day\n'    > ~/.config/terminal-theme-pair ;;
-  16) printf 'export THEME_DARK=rose-pine\nexport THEME_LIGHT=rose-pine-dawn\n'            > ~/.config/terminal-theme-pair ;;
-  17) printf 'export THEME_DARK=rose-pine-moon\nexport THEME_LIGHT=rose-pine-dawn\n'       > ~/.config/terminal-theme-pair ;;
-  20) printf 'export THEME_DARK=dracula\nexport THEME_LIGHT=dracula-alucard\n'             > ~/.config/terminal-theme-pair ;;
-  *)  rm -f ~/.config/terminal-theme-pair ;;   # single theme — no pair
+  12) THEME_DARK=catppuccin-mocha   ; THEME_LIGHT=catppuccin-latte    ;;
+  13) THEME_DARK=tokyo-night        ; THEME_LIGHT=tokyo-night-day     ;;
+  14) THEME_DARK=tokyo-night-storm  ; THEME_LIGHT=tokyo-night-day     ;;
+  15) THEME_DARK=tokyo-night-moon   ; THEME_LIGHT=tokyo-night-day     ;;
+  16) THEME_DARK=rose-pine          ; THEME_LIGHT=rose-pine-dawn      ;;
+  17) THEME_DARK=rose-pine-moon     ; THEME_LIGHT=rose-pine-dawn      ;;
+  20) THEME_DARK=dracula            ; THEME_LIGHT=dracula-alucard     ;;
+  *)  THEME_DARK=""                 ; THEME_LIGHT=""                  ;;   # single theme
 esac
-[[ -f ~/.config/terminal-theme-pair ]] && print_success "theme-sync pair saved (run: theme-sync)"
 
-# Derive VS Code theme name, icon theme, extra extension, border color, and Slack sidebar string
-case "$COLOR_THEME" in
-  catppuccin-frappe)
-    VSCODE_COLOR_THEME="Catppuccin Frappé"
-    VSCODE_ICON_THEME="catppuccin-frappe"
-    VSCODE_THEME_EXT=""
-    VSCODE_BORDER_COLOR="#51576d"
-    SLACK_THEME="#303446,#292c3c,#8caaee,#303446,#414559,#c6d0f5,#a6d189,#e78284"
-    ;;
-  catppuccin-macchiato)
-    VSCODE_COLOR_THEME="Catppuccin Macchiato"
-    VSCODE_ICON_THEME="catppuccin-macchiato"
-    VSCODE_THEME_EXT=""
-    VSCODE_BORDER_COLOR="#5b6078"
-    SLACK_THEME="#24273a,#1e2030,#8aadf4,#24273a,#363a4f,#cad3f5,#a6da95,#ed8796"
-    ;;
-  catppuccin-mocha)
-    VSCODE_COLOR_THEME="Catppuccin Mocha"
-    VSCODE_ICON_THEME="catppuccin-mocha"
-    VSCODE_THEME_EXT=""
-    VSCODE_BORDER_COLOR="#585b70"
-    SLACK_THEME="#1e1e2e,#181825,#89b4fa,#1e1e2e,#313244,#cdd6f4,#a6e3a1,#f38ba8"
-    ;;
-  catppuccin-latte)
-    VSCODE_COLOR_THEME="Catppuccin Latte"
-    VSCODE_ICON_THEME="catppuccin-latte"
-    VSCODE_THEME_EXT=""
-    VSCODE_BORDER_COLOR="#9ca0b0"
-    SLACK_THEME="#eff1f5,#e6e9ef,#1e66f5,#eff1f5,#ccd0da,#4c4f69,#40a02b,#d20f39"
-    ;;
-  tokyo-night)
-    VSCODE_COLOR_THEME="Tokyo Night"
-    VSCODE_ICON_THEME="catppuccin-mocha"
-    VSCODE_THEME_EXT="enkia.tokyo-night"
-    VSCODE_BORDER_COLOR="#414868"
-    SLACK_THEME="#1a1b26,#16161e,#7aa2f7,#c0caf5,#24283b,#c0caf5,#9ece6a,#f7768e"
-    ;;
-  tokyo-night-storm)
-    VSCODE_COLOR_THEME="Tokyo Night Storm"
-    VSCODE_ICON_THEME="catppuccin-mocha"
-    VSCODE_THEME_EXT="enkia.tokyo-night"
-    VSCODE_BORDER_COLOR="#3b4261"
-    SLACK_THEME="#24283b,#1f2335,#7aa2f7,#c0caf5,#292e42,#c0caf5,#9ece6a,#f7768e"
-    ;;
-  tokyo-night-moon)
-    VSCODE_COLOR_THEME="Tokyo Night"
-    VSCODE_ICON_THEME="catppuccin-mocha"
-    VSCODE_THEME_EXT="enkia.tokyo-night"
-    VSCODE_BORDER_COLOR="#444a73"
-    SLACK_THEME="#222436,#1e2030,#82aaff,#c8d3f5,#2d3f51,#c8d3f5,#c3e88d,#ff757f"
-    ;;
-  tokyo-night-day)
-    VSCODE_COLOR_THEME="Tokyo Night Light"
-    VSCODE_ICON_THEME="catppuccin-latte"
-    VSCODE_THEME_EXT="enkia.tokyo-night"
-    VSCODE_BORDER_COLOR="#a1a6c5"
-    SLACK_THEME="#e1e2e7,#d5d6db,#2e7de9,#e1e2e7,#b6bfe2,#3760bf,#587539,#f52a65"
-    ;;
-  rose-pine)
-    VSCODE_COLOR_THEME="Rosé Pine"
-    VSCODE_ICON_THEME="catppuccin-mocha"
-    VSCODE_THEME_EXT="mvllow.rose-pine"
-    VSCODE_BORDER_COLOR="#403d52"
-    SLACK_THEME="#191724,#16141f,#9ccfd8,#191724,#26233a,#e0def4,#31748f,#eb6f92"
-    ;;
-  rose-pine-moon)
-    VSCODE_COLOR_THEME="Rosé Pine Moon"
-    VSCODE_ICON_THEME="catppuccin-mocha"
-    VSCODE_THEME_EXT="mvllow.rose-pine"
-    VSCODE_BORDER_COLOR="#44415a"
-    SLACK_THEME="#232136,#1f1d2e,#9ccfd8,#232136,#393552,#e0def4,#3e8fb0,#eb6f92"
-    ;;
-  rose-pine-dawn)
-    VSCODE_COLOR_THEME="Rosé Pine Dawn"
-    VSCODE_ICON_THEME="catppuccin-latte"
-    VSCODE_THEME_EXT="mvllow.rose-pine"
-    VSCODE_BORDER_COLOR="#dfdad9"
-    SLACK_THEME="#faf4ed,#fffaf3,#286983,#faf4ed,#dfdad9,#575279,#56949f,#b4637a"
-    ;;
-  dracula)
-    VSCODE_COLOR_THEME="Dracula Theme"
-    VSCODE_ICON_THEME="catppuccin-mocha"
-    VSCODE_THEME_EXT="dracula-theme.theme-dracula"
-    VSCODE_BORDER_COLOR="#44475a"
-    SLACK_THEME="#282a36,#21222c,#bd93f9,#282a36,#44475a,#f8f8f2,#50fa7b,#ff5555"
-    ;;
-  dracula-alucard)
-    VSCODE_COLOR_THEME="Dracula Theme Soft"
-    VSCODE_ICON_THEME="catppuccin-latte"
-    VSCODE_THEME_EXT="dracula-theme.theme-dracula"
-    VSCODE_BORDER_COLOR="#cfcfde"
-    SLACK_THEME="#fffbeb,#f0ead8,#644ac9,#fffbeb,#cfcfde,#1f1f1f,#14710a,#cb3a2a"
-    ;;
-esac
+if [[ -n "$THEME_DARK" ]]; then
+    printf 'export THEME_DARK=%s\nexport THEME_LIGHT=%s\n' \
+        "$THEME_DARK" "$THEME_LIGHT" > ~/.config/terminal-theme-pair
+    print_success "theme-sync pair saved (run: theme-sync, or let Cursor/VSCode auto-switch)"
+else
+    rm -f ~/.config/terminal-theme-pair
+fi
+
+# Look up VS Code / Cursor theme metadata for a given color-theme key.
+# Sets VS_NAME, VS_ICON, VS_BORDER, VS_EXT, VS_SLACK as side-effects (avoiding
+# associative arrays since macOS still ships bash 3.2 by default).
+_vscode_theme_meta() {
+    case "$1" in
+      catppuccin-frappe)
+        VS_NAME="Catppuccin Frappé"; VS_ICON="catppuccin-frappe"; VS_EXT=""
+        VS_BORDER="#51576d"
+        VS_SLACK="#303446,#292c3c,#8caaee,#303446,#414559,#c6d0f5,#a6d189,#e78284" ;;
+      catppuccin-macchiato)
+        VS_NAME="Catppuccin Macchiato"; VS_ICON="catppuccin-macchiato"; VS_EXT=""
+        VS_BORDER="#5b6078"
+        VS_SLACK="#24273a,#1e2030,#8aadf4,#24273a,#363a4f,#cad3f5,#a6da95,#ed8796" ;;
+      catppuccin-mocha)
+        VS_NAME="Catppuccin Mocha"; VS_ICON="catppuccin-mocha"; VS_EXT=""
+        VS_BORDER="#585b70"
+        VS_SLACK="#1e1e2e,#181825,#89b4fa,#1e1e2e,#313244,#cdd6f4,#a6e3a1,#f38ba8" ;;
+      catppuccin-latte)
+        VS_NAME="Catppuccin Latte"; VS_ICON="catppuccin-latte"; VS_EXT=""
+        VS_BORDER="#9ca0b0"
+        VS_SLACK="#eff1f5,#e6e9ef,#1e66f5,#eff1f5,#ccd0da,#4c4f69,#40a02b,#d20f39" ;;
+      tokyo-night)
+        VS_NAME="Tokyo Night"; VS_ICON="catppuccin-mocha"; VS_EXT="enkia.tokyo-night"
+        VS_BORDER="#414868"
+        VS_SLACK="#1a1b26,#16161e,#7aa2f7,#c0caf5,#24283b,#c0caf5,#9ece6a,#f7768e" ;;
+      tokyo-night-storm)
+        VS_NAME="Tokyo Night Storm"; VS_ICON="catppuccin-mocha"; VS_EXT="enkia.tokyo-night"
+        VS_BORDER="#3b4261"
+        VS_SLACK="#24283b,#1f2335,#7aa2f7,#c0caf5,#292e42,#c0caf5,#9ece6a,#f7768e" ;;
+      tokyo-night-moon)
+        VS_NAME="Tokyo Night"; VS_ICON="catppuccin-mocha"; VS_EXT="enkia.tokyo-night"
+        VS_BORDER="#444a73"
+        VS_SLACK="#222436,#1e2030,#82aaff,#c8d3f5,#2d3f51,#c8d3f5,#c3e88d,#ff757f" ;;
+      tokyo-night-day)
+        VS_NAME="Tokyo Night Light"; VS_ICON="catppuccin-latte"; VS_EXT="enkia.tokyo-night"
+        VS_BORDER="#a1a6c5"
+        VS_SLACK="#e1e2e7,#d5d6db,#2e7de9,#e1e2e7,#b6bfe2,#3760bf,#587539,#f52a65" ;;
+      rose-pine)
+        VS_NAME="Rosé Pine"; VS_ICON="catppuccin-mocha"; VS_EXT="mvllow.rose-pine"
+        VS_BORDER="#403d52"
+        VS_SLACK="#191724,#16141f,#9ccfd8,#191724,#26233a,#e0def4,#31748f,#eb6f92" ;;
+      rose-pine-moon)
+        VS_NAME="Rosé Pine Moon"; VS_ICON="catppuccin-mocha"; VS_EXT="mvllow.rose-pine"
+        VS_BORDER="#44415a"
+        VS_SLACK="#232136,#1f1d2e,#9ccfd8,#232136,#393552,#e0def4,#3e8fb0,#eb6f92" ;;
+      rose-pine-dawn)
+        VS_NAME="Rosé Pine Dawn"; VS_ICON="catppuccin-latte"; VS_EXT="mvllow.rose-pine"
+        VS_BORDER="#dfdad9"
+        VS_SLACK="#faf4ed,#fffaf3,#286983,#faf4ed,#dfdad9,#575279,#56949f,#b4637a" ;;
+      dracula)
+        VS_NAME="Dracula Theme"; VS_ICON="catppuccin-mocha"; VS_EXT="dracula-theme.theme-dracula"
+        VS_BORDER="#44475a"
+        VS_SLACK="#282a36,#21222c,#bd93f9,#282a36,#44475a,#f8f8f2,#50fa7b,#ff5555" ;;
+      dracula-alucard)
+        VS_NAME="Dracula Theme Soft"; VS_ICON="catppuccin-latte"; VS_EXT="dracula-theme.theme-dracula"
+        VS_BORDER="#cfcfde"
+        VS_SLACK="#fffbeb,#f0ead8,#644ac9,#fffbeb,#cfcfde,#1f1f1f,#14710a,#cb3a2a" ;;
+      *)
+        VS_NAME=""; VS_ICON=""; VS_EXT=""; VS_BORDER=""; VS_SLACK="" ;;
+    esac
+}
+
+# Primary theme metadata — drives the single-theme placeholders.
+_vscode_theme_meta "$COLOR_THEME"
+VSCODE_COLOR_THEME="$VS_NAME"
+VSCODE_ICON_THEME="$VS_ICON"
+VSCODE_THEME_EXT="$VS_EXT"
+VSCODE_BORDER_COLOR="$VS_BORDER"
+SLACK_THEME="$VS_SLACK"
+
+# Cursor / VS Code auto-detect macOS dark↔light mode.
+# When a theme PAIR was chosen, set the preferred-{Dark,Light} settings so the
+# IDE follows macOS appearance changes natively (no shell helper needed).
+# When a SINGLE theme was chosen, autoDetect=false and both prefs fall back to
+# the chosen theme — Cursor/VS Code then ignore appearance changes.
+if [[ -n "$THEME_DARK" ]]; then
+    VSCODE_AUTO_DETECT="true"
+    _vscode_theme_meta "$THEME_DARK";  VSCODE_DARK_THEME="$VS_NAME";  VSCODE_DARK_EXT="$VS_EXT"
+    _vscode_theme_meta "$THEME_LIGHT"; VSCODE_LIGHT_THEME="$VS_NAME"; VSCODE_LIGHT_EXT="$VS_EXT"
+else
+    VSCODE_AUTO_DETECT="false"
+    VSCODE_DARK_THEME="$VSCODE_COLOR_THEME"
+    VSCODE_LIGHT_THEME="$VSCODE_COLOR_THEME"
+    VSCODE_DARK_EXT=""
+    VSCODE_LIGHT_EXT=""
+fi
 
 # =============================================================================
 # 11. DIRECTORIES
@@ -781,9 +784,19 @@ print_success "Vim config"
 #
 #   on   "Full tmux mouse mode"  — click panes, drag-resize, wheel-scrolls-
 #                                  buffer, right-click context menu, OSC 52
-#                                  clipboard pass-through. (Default.)
-#   off  "Normal terminal"       — tmux ignores the mouse entirely. Selection,
-#                                  scrolling, and right-click are Ghostty's.
+#                                  clipboard pass-through, mouse-in-apps
+#                                  (vim/fzf). (Default.)
+#   off  "Scroll only"           — tmux owns only the wheel (so scrolling
+#                                  shows your actual pane history, not zsh
+#                                  command history). Clicks / drag / right-
+#                                  click are tmux no-ops. Native Ghostty
+#                                  selection: hold ⌥ Option.
+#
+# Note: a truly "mouse off" mode is offered by neither option because tmux
+# always uses the alternate screen, and Ghostty's xterm emulation then
+# translates wheel events into Up/Down arrows — which zsh interprets as
+# command-history navigation. The "Scroll only" mode picks the smallest
+# possible tmux mouse footprint to dodge that.
 #
 # Either way you can still copy with Prefix + [ -> v -> y, paste with Prefix + ].
 TMUX_MOUSE_CHOICE=""
@@ -796,13 +809,15 @@ if (( UPDATE_ONLY )) && [[ -n "$TMUX_MOUSE_CHOICE" ]]; then
 else
     echo ""
     echo "Tmux mouse / context-menu behaviour:"
-    echo "  1) Full tmux mouse mode  (default — click panes, drag-resize,"
-    echo "                            wheel scrolls tmux history, right-click menu)"
-    echo "  2) Normal terminal       (tmux ignores the mouse — Ghostty owns"
-    echo "                            selection, scroll, and right-click)"
+    echo "  1) Full tmux mouse mode  (default — click panes, drag-resize, wheel"
+    echo "                            scrolls history, right-click menu, mouse"
+    echo "                            in vim/fzf)"
+    echo "  2) Scroll only           (tmux owns only the wheel — clicks / drag /"
+    echo "                            right-click are no-ops. Hold ⌥ Option for"
+    echo "                            Ghostty-native selection.)"
     echo ""
-    echo "  Tip: even with option 1, hold ⌥ Option while selecting in Ghostty"
-    echo "       to do a native terminal selection (good for long wrapped URLs)."
+    echo "  Tip: in BOTH modes, hold ⌥ Option while selecting in Ghostty to do"
+    echo "       a native terminal selection (good for long wrapped URLs)."
     echo ""
     _tmc_pick="$(ask_value "Pick [1/2] (default 1): " "1")"
     case "$_tmc_pick" in
@@ -873,26 +888,49 @@ if command_exists helm; then
         || print_warning "helm completion generation failed"
 fi
 
+# Render a settings-base.json template into a target settings.json with all
+# the placeholders filled in. Used by Cursor + VS Code below.
+_render_vscode_settings() {
+    local src="$1" dst="$2"
+    sed \
+      -e "s|__VSCODE_COLOR_THEME__|$VSCODE_COLOR_THEME|g" \
+      -e "s|__VSCODE_DARK_THEME__|$VSCODE_DARK_THEME|g" \
+      -e "s|__VSCODE_LIGHT_THEME__|$VSCODE_LIGHT_THEME|g" \
+      -e "s|__VSCODE_AUTO_DETECT__|$VSCODE_AUTO_DETECT|g" \
+      -e "s|__VSCODE_ICON_THEME__|$VSCODE_ICON_THEME|g" \
+      -e "s|__VSCODE_BORDER_COLOR__|$VSCODE_BORDER_COLOR|g" \
+      "$src" > "$dst"
+}
+
 # ── Cursor ──────────────────────────────────────────────────────────────────
 CURSOR_DIR="$HOME/Library/Application Support/Cursor/User"
 if [[ -d "$CURSOR_DIR" ]]; then
     backup_file "$CURSOR_DIR/settings.json"
-    sed \
-      -e "s|__VSCODE_COLOR_THEME__|$VSCODE_COLOR_THEME|g" \
-      -e "s|__VSCODE_ICON_THEME__|$VSCODE_ICON_THEME|g" \
-      -e "s|__VSCODE_BORDER_COLOR__|$VSCODE_BORDER_COLOR|g" \
-      "$SCRIPT_DIR/configs/cursor/settings-base.json" > "$CURSOR_DIR/settings.json"
-    print_success "Cursor settings (theme: $VSCODE_COLOR_THEME)"
+    _render_vscode_settings \
+        "$SCRIPT_DIR/configs/cursor/settings-base.json" \
+        "$CURSOR_DIR/settings.json"
+    if [[ "$VSCODE_AUTO_DETECT" == "true" ]]; then
+        print_success "Cursor settings (auto-detect: dark=$VSCODE_DARK_THEME, light=$VSCODE_LIGHT_THEME)"
+    else
+        print_success "Cursor settings (theme: $VSCODE_COLOR_THEME)"
+    fi
     if command_exists cursor; then
         cursor --install-extension catppuccin.catppuccin-vsc       2>/dev/null && print_success "Cursor: Catppuccin theme ext"  || true
         cursor --install-extension catppuccin.catppuccin-vsc-icons 2>/dev/null && print_success "Cursor: Catppuccin icon ext"   || true
-        [[ -n "$VSCODE_THEME_EXT" ]] && \
-          cursor --install-extension "$VSCODE_THEME_EXT" 2>/dev/null && print_success "Cursor: $VSCODE_THEME_EXT" || true
+        # Install the extensions for the single theme AND for both ends of a pair
+        # (auto-detect needs both installed; the user might never see dark or light
+        # otherwise depending on which mode boots first).
+        for _ext in "$VSCODE_THEME_EXT" "$VSCODE_DARK_EXT" "$VSCODE_LIGHT_EXT"; do
+            [[ -n "$_ext" ]] || continue
+            cursor --install-extension "$_ext" 2>/dev/null && print_success "Cursor: $_ext" || true
+        done
     else
         print_warning "cursor CLI not in PATH — install extensions manually:"
         echo "  cursor --install-extension catppuccin.catppuccin-vsc"
         echo "  cursor --install-extension catppuccin.catppuccin-vsc-icons"
-        [[ -n "$VSCODE_THEME_EXT" ]] && echo "  cursor --install-extension $VSCODE_THEME_EXT"
+        for _ext in "$VSCODE_THEME_EXT" "$VSCODE_DARK_EXT" "$VSCODE_LIGHT_EXT"; do
+            [[ -n "$_ext" ]] && echo "  cursor --install-extension $_ext"
+        done
     fi
 else
     print_warning "Cursor not found — skipping Cursor config"
@@ -902,17 +940,23 @@ fi
 VSCODE_DIR="$HOME/Library/Application Support/Code/User"
 if [[ -d "$VSCODE_DIR" ]]; then
     backup_file "$VSCODE_DIR/settings.json"
-    sed \
-      -e "s|__VSCODE_COLOR_THEME__|$VSCODE_COLOR_THEME|g" \
-      -e "s|__VSCODE_ICON_THEME__|$VSCODE_ICON_THEME|g" \
-      -e "s|__VSCODE_BORDER_COLOR__|$VSCODE_BORDER_COLOR|g" \
-      "$SCRIPT_DIR/configs/vscode/settings-base.json" > "$VSCODE_DIR/settings.json"
-    print_success "VS Code settings (theme: $VSCODE_COLOR_THEME)"
+    _render_vscode_settings \
+        "$SCRIPT_DIR/configs/vscode/settings-base.json" \
+        "$VSCODE_DIR/settings.json"
+    if [[ "$VSCODE_AUTO_DETECT" == "true" ]]; then
+        print_success "VS Code settings (auto-detect: dark=$VSCODE_DARK_THEME, light=$VSCODE_LIGHT_THEME)"
+    else
+        print_success "VS Code settings (theme: $VSCODE_COLOR_THEME)"
+    fi
     if command_exists code; then
         code --install-extension catppuccin.catppuccin-vsc                    2>/dev/null && print_success "VS Code: Catppuccin theme ext"  || true
         code --install-extension catppuccin.catppuccin-vsc-icons              2>/dev/null && print_success "VS Code: Catppuccin icon ext"   || true
-        [[ -n "$VSCODE_THEME_EXT" ]] && \
-          code --install-extension "$VSCODE_THEME_EXT"                        2>/dev/null && print_success "VS Code: $VSCODE_THEME_EXT"     || true
+        # Install the extensions for the single theme AND for both ends of a
+        # pair so auto-detect always has the underlying theme available.
+        for _ext in "$VSCODE_THEME_EXT" "$VSCODE_DARK_EXT" "$VSCODE_LIGHT_EXT"; do
+            [[ -n "$_ext" ]] || continue
+            code --install-extension "$_ext" 2>/dev/null && print_success "VS Code: $_ext" || true
+        done
         code --install-extension esbenp.prettier-vscode                       2>/dev/null && print_success "VS Code: Prettier"              || true
         code --install-extension ms-python.python                             2>/dev/null && print_success "VS Code: Python"                || true
         code --install-extension ms-python.black-formatter                    2>/dev/null && print_success "VS Code: Black formatter"       || true

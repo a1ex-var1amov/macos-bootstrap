@@ -92,17 +92,33 @@ Adding a new theme = copy any existing theme file and edit the 11 hex values. Th
 
 The installer copies them to `~/.config/tmux/scripts/` and ensures the executable bit is set.
 
+### Cursor / VS Code dark-light autoDetect
+When install.sh writes Cursor or VS Code settings, it substitutes six placeholders into `configs/{cursor,vscode}/settings-base.json`:
+
+- `__VSCODE_COLOR_THEME__` / `__VSCODE_ICON_THEME__` / `__VSCODE_BORDER_COLOR__` — single-theme values
+- `__VSCODE_DARK_THEME__` / `__VSCODE_LIGHT_THEME__` — pair endpoints
+- `__VSCODE_AUTO_DETECT__` — literal `true` or `false` (note: unquoted, since it's a JSON boolean)
+
+When a PAIR is chosen (`THEME_DARK` and `THEME_LIGHT` are set), `__VSCODE_AUTO_DETECT__` becomes `true` and the IDE follows macOS appearance via `window.autoDetectColorScheme` + `preferred{Dark,Light}ColorTheme`. When a single theme is chosen, all three placeholders point at it and autoDetect is `false`.
+
+The `_vscode_theme_meta()` helper in install.sh maps a theme key (e.g. `catppuccin-mocha`) to `VS_NAME`/`VS_ICON`/`VS_EXT`/`VS_BORDER`/`VS_SLACK`. When adding a new theme, extend this single function — both the primary-theme path and both ends of any pair will pick it up automatically.
+
+`tests/check.sh` scans the rendered placeholder set in both settings-base.json files and asserts each has a matching `sed -e "s|__NAME__|..."` line in install.sh, so new placeholders can't be added without their substitution.
+
 ### Tmux Mouse Mode (`~/.config/tmux-mouse.conf`)
 `tmux.conf` does NOT hardcode `set -g mouse on` / `set -g set-clipboard on`. Instead it sources `~/.config/tmux-mouse.conf`, which install.sh writes from one of two bundled snippets:
-- `configs/tmux/extras/mouse-on.conf` — full tmux mouse UX (click, scroll, drag-resize, context menu, OSC 52 clipboard)
-- `configs/tmux/extras/mouse-off.conf` — tmux ignores the mouse entirely; Ghostty owns selection / scroll / right-click
+- `configs/tmux/extras/mouse-on.conf` — full tmux mouse UX (click, scroll, drag-resize, context menu, OSC 52 clipboard, mouse forwarded to vim/fzf)
+- `configs/tmux/extras/mouse-off.conf` — **scroll-only hybrid**: tmux still has `mouse on` but binds ONLY the wheel; every other mouse binding is explicitly `unbind -n`'d. Click / drag / right-click become tmux no-ops; native Ghostty selection requires holding `⌥ Option`.
 
 The chosen mode is persisted to `~/.config/terminal-tmux-mouse` (contents: `on` or `off`) so `--update` runs don't re-prompt. To flip manually:
 ```bash
 cp ~/.config/tmux/extras/mouse-{off,on}.conf ~/.config/tmux-mouse.conf
 tmux source ~/.tmux.conf
 ```
-When adding mouse-related bindings, put them in the corresponding `mouse-*.conf` file, not in `tmux.conf`, so the "normal terminal" mode stays clean.
+
+**Important design note**: there's intentionally NO "truly mouse off" config. Tmux always uses Ghostty's alternate screen, and Ghostty's xterm emulation translates wheel events on the alternate screen into Up/Down arrow keys — which zsh interprets as command-history navigation. So a `set -g mouse off` config breaks wheel-scrolling in a way users don't expect. The scroll-only hybrid in `mouse-off.conf` is the smallest possible footprint that still gives natural wheel scrolling.
+
+When adding mouse-related bindings, put them in the corresponding `mouse-*.conf` file, not in `tmux.conf`. New unbinds should usually go in BOTH (e.g. if you stop wanting `MouseDown3Pane` to do anything, unbind it in both `mouse-on.conf` and `mouse-off.conf`).
 
 ### Tmux Session Helpers (`ts`, `tsp`, `tsk`, `tka`)
 All four functions in `.zshrc` are safe to call from inside an existing tmux client — they detect `$TMUX` and use `switch-client` instead of `attach`. `tsk` creates a session with a specific `KUBECONFIG` exported in its environment for multi-cluster workflows. `tka` always prompts before killing the server.

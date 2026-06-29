@@ -11,9 +11,19 @@
 
   // ==========================================================================
   // THEME (set by install.sh — run ./install.sh to change)
+  //
+  // When a dark/light theme PAIR is chosen (install.sh options 12-20), VS Code
+  // follows macOS appearance natively:
+  //   window.autoDetectColorScheme = true
+  //   workbench.preferredDarkColorTheme / preferredLightColorTheme drive the swap.
+  // When a SINGLE theme is chosen, autoDetectColorScheme is false and the
+  // workbench.colorTheme value is used regardless of macOS mode.
   // ==========================================================================
-  "workbench.colorTheme": "__VSCODE_COLOR_THEME__",
-  "workbench.iconTheme": "__VSCODE_ICON_THEME__",
+  "window.autoDetectColorScheme":           __VSCODE_AUTO_DETECT__,
+  "workbench.colorTheme":                   "__VSCODE_COLOR_THEME__",
+  "workbench.preferredDarkColorTheme":      "__VSCODE_DARK_THEME__",
+  "workbench.preferredLightColorTheme":     "__VSCODE_LIGHT_THEME__",
+  "workbench.iconTheme":                    "__VSCODE_ICON_THEME__",
   "workbench.colorCustomizations": {
     "editorGroup.border": "__VSCODE_BORDER_COLOR__",
     "panel.border":       "__VSCODE_BORDER_COLOR__",

@@ -64,6 +64,7 @@ PANES (splits)
   Prefix + Space    Cycle layouts
   Prefix + m        Mark pane (default — used by move-pane -t '{marked}')
   Prefix + y        Toggle synchronize-panes  (custom)
+  Prefix + T        Set pane title  (custom — pair with pane-border-status)
 
 PANE NAVIGATION
 --------------------------------------------------------------------------------
@@ -95,6 +96,13 @@ COPY MODE (vi-style)
   ?                 Search backward
   n / N             Next/prev search result
 
+CLIPBOARD / SCROLLBACK
+--------------------------------------------------------------------------------
+  Prefix + ]        Paste tmux's own buffer
+  Prefix + V        Paste macOS clipboard into current pane  (custom)
+  Prefix + W        Save current pane's scrollback to ~/tmux-...-DATE.log  (custom)
+  Prefix + =        List buffers (default — pick one to paste)
+
 NESTED TMUX
 --------------------------------------------------------------------------------
   Prefix + b        Send literal Ctrl+b to inner app (default — preserved)
@@ -103,12 +111,27 @@ NESTED TMUX
 
 MOUSE MODE  (chosen at install time, lives in ~/.config/tmux-mouse.conf)
 --------------------------------------------------------------------------------
-  on   (default)    Click panes, drag borders, wheel scrolls tmux history,
-                    right-click = tmux context menu, OSC 52 clipboard pass.
-                    Hold ⌥ Option while selecting to bypass tmux and use
-                    Ghostty-native selection.
-  off               Tmux ignores the mouse — Ghostty owns selection, scroll,
-                    and right-click. Use Prefix + [ then v/y to copy.
+  on  (default)     Click panes, drag borders, wheel scrolls tmux history,
+                    right-click = tmux menu, OSC 52 clipboard, mouse forwarded
+                    to vim/fzf. Hold Option in Ghostty for native selection.
+  off (scroll only) Wheel scrolls tmux history; click / drag / right-click
+                    are tmux no-ops. Hold Option for native selection.
+                    (NB: there's no truly mouse-off mode because tmux + the
+                    alternate screen would otherwise turn wheel events into
+                    Up/Down arrow keys, hijacking zsh history navigation.)
+
+  Extra mouse actions in "on" mode  (custom):
+    Drag-select       Selection -> macOS clipboard on release
+    Double-click      Select word + copy to macOS clipboard
+    Triple-click      Select line + copy to macOS clipboard
+    Click session     Click the session name on the status bar -> fzf switcher
+    Right-click       tmux context menu (Copy / Paste / Detach / Kill / ...)
+
+  Always works regardless of mouse mode:
+    Prefix + [        Enter copy-mode (then j/k/Ctrl-u/d/search)
+    Prefix + PgUp     Enter copy-mode and scroll up one page
+    Prefix + ]        Paste tmux buffer
+    Prefix + V        Paste macOS clipboard
 
   Flip without reinstalling:
     cp ~/.config/tmux/extras/mouse-on.conf  ~/.config/tmux-mouse.conf

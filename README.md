@@ -217,19 +217,43 @@ For viewing two clusters side-by-side: open two Ghostty splits (`Cmd+D`), run `t
 
 Each theme file is just 11 color tokens (`@bg`, `@accent`, etc.) — see `configs/tmux/themes/catppuccin-frappe.conf` for the template. The status bar, pane borders, and popup colors all live once in `tmux.conf` and read these tokens, so a new theme is a 12-line file.
 
+### Cursor / VS Code follow macOS dark↔light automatically
+
+When you pick a theme PAIR during `./install.sh` (options 12-20), the installer wires up Cursor and VS Code to natively follow the macOS appearance:
+
+- `window.autoDetectColorScheme = true`
+- `workbench.preferredDarkColorTheme = <dark theme>` (e.g. Catppuccin Mocha)
+- `workbench.preferredLightColorTheme = <light theme>` (e.g. Catppuccin Latte)
+
+Toggle macOS appearance (System Settings -> Appearance, or via Raycast / a Shortcut) and Cursor swaps themes instantly — no IDE restart, no helper script. The terminal stack (`tmux`, `bat`, `delta`, `neovim`) is updated by the existing `theme-sync` shell function. Ghostty already follows macOS natively via its `dark:foo,light:bar` config syntax.
+
+When you pick a single theme (options 1-11, 18, 19) the installer flips `autoDetectColorScheme` to `false` so Cursor sticks with that one regardless of macOS mode.
+
 ### Tmux mouse mode (chosen at install time)
 
-The installer asks whether you want tmux to intercept the mouse at all. The choice is saved to `~/.config/terminal-tmux-mouse` and preserved across `--update` runs.
+The installer asks how much of the mouse you want tmux to intercept. The choice is saved to `~/.config/terminal-tmux-mouse` and preserved across `--update` runs.
 
-| Mode | What tmux does | What Ghostty does |
-|---|---|---|
-| **on** (default) | Click panes to focus, drag borders to resize, wheel scrolls tmux's full history, right-click opens tmux's context menu, OSC 52 clipboard passthrough | Selection only works while holding `⌥ Option` |
-| **off** ("normal terminal") | Nothing — tmux ignores the mouse | Owns selection, scroll, right-click — feels like a plain Ghostty window |
+| Mode | Wheel | Click / drag / right-click | Selection |
+|---|---|---|---|
+| **on** (default) | Scrolls tmux history (copy-mode) | Click focuses pane, drag resizes border, right-click opens tmux menu, OSC 52 clipboard works, mouse forwarded to vim/fzf | Hold `⌥ Option` for Ghostty-native |
+| **off** ("scroll only") | Scrolls tmux history (copy-mode) | All no-ops | Hold `⌥ Option` for Ghostty-native |
 
-Either way, keyboard copy still works (`Prefix + [` → `v` → `y`). To flip later without re-running the installer:
+**Why isn't there a true "mouse off" mode?** Because tmux always runs on Ghostty's alternate screen, and Ghostty (like all xterm-compatible terminals) translates wheel events on the alternate screen into Up/Down arrow keys — which zsh interprets as command-history navigation. If tmux doesn't intercept the wheel, scrolling the wheel inside tmux navigates your command history instead of scrolling pane output. The "Scroll only" mode picks the smallest possible mouse footprint to avoid that pitfall.
+
+Keyboard copy/scroll always works regardless of mouse mode:
+
+| Key | Action |
+|---|---|
+| `Prefix + [` | Enter copy-mode |
+| `Prefix + PgUp` | Enter copy-mode and scroll up one page |
+| inside copy-mode: `v`, `y` | Select and yank (to macOS clipboard) |
+| `Prefix + ]` | Paste tmux buffer |
+
+To flip later without re-running the installer:
 
 ```bash
-cp ~/.config/tmux/extras/mouse-off.conf ~/.config/tmux-mouse.conf
+cp ~/.config/tmux/extras/mouse-off.conf ~/.config/tmux-mouse.conf  # scroll only
+cp ~/.config/tmux/extras/mouse-on.conf  ~/.config/tmux-mouse.conf  # full mouse
 tmux source ~/.tmux.conf
 ```
 

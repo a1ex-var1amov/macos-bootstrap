@@ -130,6 +130,22 @@ for required in "~/.config/tmux-theme.conf" "~/.config/tmux-mouse.conf"; do
     fi
 done
 
+# Cursor + VS Code settings-base.json placeholders must each have a matching
+# sed `-e "s|__NAME__|...|"` line in install.sh. Catches the "added a new
+# __PLACEHOLDER__ but forgot to substitute it" class of bug, which would ship
+# a broken JSON file to users.
+section "Cursor/VSCode settings placeholders"
+
+for tmpl in configs/cursor/settings-base.json configs/vscode/settings-base.json; do
+    while IFS= read -r placeholder; do
+        if grep -qF "s|$placeholder|" "$REPO/install.sh"; then
+            ok "$tmpl uses $placeholder (substituted)"
+        else
+            fail "$tmpl uses $placeholder but install.sh has no sed substitution"
+        fi
+    done < <(grep -oE '__[A-Z_]+__' "$REPO/$tmpl" | sort -u)
+done
+
 # Each ghostty theme referenced by install.sh must exist in configs/ghostty/themes/.
 section "Ghostty theme references"
 
