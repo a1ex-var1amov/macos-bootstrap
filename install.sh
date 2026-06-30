@@ -546,7 +546,7 @@ echo "  14) Tokyo Night Storm pair— Storm    ↔ Day    (tmux/nvim: Storm)"
 echo "  15) Tokyo Night Moon pair — Moon     ↔ Day    (tmux/nvim: Moon)"
 echo "  16) Rosé Pine pair        — Main     ↔ Dawn   (tmux/nvim: Main)"
 echo "  17) Rosé Pine Moon pair   — Moon     ↔ Dawn   (tmux/nvim: Moon)"
-echo "  20) Dracula pair          — Dracula  ↔ Alucard (tmux/nvim: Dracula)"
+echo "  20) Dracula pair          — Dracula  ↔ Alucard (tmux/nvim/Ghostty); IDE light side: Rosé Pine Dawn"
 echo ""
 # In update mode, derive the choice from the previously-saved theme so we
 # don't reset it back to the default.
@@ -701,6 +701,15 @@ if [[ -n "$THEME_DARK" ]]; then
     VSCODE_AUTO_DETECT="true"
     _vscode_theme_meta "$THEME_DARK";  VSCODE_DARK_THEME="$VS_NAME";  VSCODE_DARK_EXT="$VS_EXT"
     _vscode_theme_meta "$THEME_LIGHT"; VSCODE_LIGHT_THEME="$VS_NAME"; VSCODE_LIGHT_EXT="$VS_EXT"
+    # Cursor/VS Code only swap on macOS appearance when preferredLight points at
+    # a vs/hc-light theme. The Dracula extension's "Soft" variant is still
+    # vs-dark, so autoDetectColorScheme silently no-ops with it. Substitute a
+    # real light theme (Rosé Pine Dawn) on the IDE side only — tmux/nvim/Ghostty
+    # keep using dracula-alucard since each of those has a real light recipe.
+    if [[ "$THEME_LIGHT" == "dracula-alucard" ]]; then
+        _vscode_theme_meta "rose-pine-dawn"
+        VSCODE_LIGHT_THEME="$VS_NAME"; VSCODE_LIGHT_EXT="$VS_EXT"
+    fi
 else
     VSCODE_AUTO_DETECT="false"
     VSCODE_DARK_THEME="$VSCODE_COLOR_THEME"
