@@ -6,13 +6,22 @@
 # Usage:
 #   ./install.sh                  Full interactive install (default)
 #   ./install.sh --yes            Non-interactive — accept all defaults
-#                                 (prompt: starship, theme: catppuccin-frappe,
+#                                 (prompt: starship, theme: catppuccin,
 #                                  tmux mouse: on, tmux autostart: off)
 #   ./install.sh --update         Update mode — skip install prompts, only
 #                                 redeploy config files + themes + scripts.
 #                                 Previously-chosen prompt / color theme /
 #                                 tmux mouse mode are preserved.
 #   ./install.sh --update --yes   Quietly refresh configs from this repo
+#   ./install.sh --theme=<key>    Pre-select a theme pair (skips the menu).
+#                                 Accepts a menu number (1-15) OR a key:
+#                                 catppuccin (default = 1),
+#                                 catppuccin-macchiato (2), catppuccin-frappe (3),
+#                                 tokyo-night (4), tokyo-night-storm (5),
+#                                 tokyo-night-moon (6), rose-pine (7),
+#                                 rose-pine-moon (8), dracula (9),
+#                                 solarized (10), gruvbox (11), everforest (12),
+#                                 kanagawa (13), github (14), nord (15)
 #
 
 set -e
@@ -31,10 +40,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # ── Flags ────────────────────────────────────────────────────────────────────
 INTERACTIVE=1
 UPDATE_ONLY=0
+THEME_FLAG=""
 for arg in "$@"; do
     case "$arg" in
         -y|--yes|--non-interactive) INTERACTIVE=0 ;;
         -u|--update)                UPDATE_ONLY=1 ;;
+        --theme=*)                  THEME_FLAG="${arg#--theme=}" ;;
         -h|--help)
             cat <<'EOF'
 macOS Bootstrap + Terminal Config Installer
@@ -43,7 +54,7 @@ Usage:
   ./install.sh                  Full interactive install (default)
   ./install.sh --yes            Non-interactive — accept all defaults:
                                   prompt = starship
-                                  theme  = catppuccin-frappe
+                                  theme  = catppuccin pair (Mocha ↔ Latte)
                                   tmux mouse mode = on
                                   tmux autostart  = off
   ./install.sh --update         Update mode — skip install prompts, only
@@ -51,6 +62,16 @@ Usage:
                                 Previously-chosen prompt / theme / tmux
                                 mouse mode are preserved.
   ./install.sh --update --yes   Quietly refresh configs from this repo
+  ./install.sh --theme=<n|key>  Pre-select a theme pair, skipping the menu.
+                                Accepts a menu number (1-15) OR a key:
+                                  1  catppuccin (default)     9  dracula
+                                  2  catppuccin-macchiato    10  solarized
+                                  3  catppuccin-frappe       11  gruvbox
+                                  4  tokyo-night             12  everforest
+                                  5  tokyo-night-storm       13  kanagawa
+                                  6  tokyo-night-moon        14  github
+                                  7  rose-pine               15  nord
+                                  8  rose-pine-moon
 EOF
             exit 0 ;;
         *)  echo "Unknown flag: $arg (use --help)"; exit 1 ;;
@@ -511,116 +532,95 @@ fi
 # =============================================================================
 print_section "Color Scheme"
 
-COLOR_THEME="catppuccin-frappe"
+# Default = Catppuccin pair (Mocha ↔ Latte). Pre-populated COLOR_THEME survives
+# update-mode runs; we re-derive the menu choice below.
+COLOR_THEME="catppuccin-mocha"
 if [[ -f "$HOME/.config/terminal-color-theme" ]]; then
     source "$HOME/.config/terminal-color-theme" 2>/dev/null || true
 fi
 
-echo "Choose your color scheme:"
+echo "Choose your color-scheme PAIR (auto-switches with macOS appearance):"
 echo ""
-echo "  ── Catppuccin ──────────────────────────────────────────────────────"
-echo "   1) Catppuccin Frappé     — cool purple-dark (default)"
-echo "   2) Catppuccin Macchiato  — cool medium dark"
-echo "   3) Catppuccin Mocha      — cool darkest dark"
-echo "   4) Catppuccin Latte      — warm light"
+echo "   1) Catppuccin            — Mocha     ↔ Latte           (cool purple)"
+echo "   2) Catppuccin Macchiato  — Macchiato ↔ Latte           (medium-dark variant)"
+echo "   3) Catppuccin Frappé     — Frappé    ↔ Latte           (lightest dark variant)"
+echo "   4) Tokyo Night           — Night     ↔ Day             (deep blue-purple)"
+echo "   5) Tokyo Night Storm     — Storm     ↔ Day             (slightly lighter)"
+echo "   6) Tokyo Night Moon      — Moon      ↔ Day             (muted purple-dark)"
+echo "   7) Rosé Pine             — Main      ↔ Dawn            (warm pink-cream)"
+echo "   8) Rosé Pine Moon        — Moon      ↔ Dawn            (deep dark variant)"
+echo "   9) Dracula               — Dracula   ↔ Alucard         (classic purple; IDE light side: Rosé Pine Dawn)"
+echo "  10) Solarized             — Dark      ↔ Light           (Ethan Schoonover's ergonomic palette)"
+echo "  11) Gruvbox               — Dark      ↔ Light           (warm retro earth tones)"
+echo "  12) Everforest            — Dark      ↔ Light           (calming forest green)"
+echo "  13) Kanagawa              — Wave      ↔ Lotus           (Hokusai-inspired Japanese)"
+echo "  14) GitHub                — Dark      ↔ Light           (what github.com uses)"
+echo "  15) Nord                  — Nord      ↔ Nord Light      (cool arctic blues; IDE light side: Default Light Modern)"
 echo ""
-echo "  ── Tokyo Night ─────────────────────────────────────────────────────"
-echo "   5) Tokyo Night           — deep blue-purple dark (Night)"
-echo "   6) Tokyo Night Storm     — deep blue, slightly lighter"
-echo "   7) Tokyo Night Moon      — muted purple-dark"
-echo "   8) Tokyo Night Day       — clean light"
-echo ""
-echo "  ── Rosé Pine ───────────────────────────────────────────────────────"
-echo "   9) Rosé Pine             — warm dark (Main)"
-echo "  10) Rosé Pine Moon        — deep dark variant"
-echo "  11) Rosé Pine Dawn        — warm light"
-echo ""
-echo "  ── Dracula ─────────────────────────────────────────────────────────"
-echo "  18) Dracula               — classic dark purple"
-echo "  19) Dracula Alucard       — official light warm-cream variant"
-echo ""
-echo "  ── Pairs: auto-switch with macOS appearance (Ghostty only) ─────────"
-echo "  12) Catppuccin pair       — Mocha    ↔ Latte  (tmux/nvim: Mocha)"
-echo "  13) Tokyo Night pair      — Night    ↔ Day    (tmux/nvim: Night)"
-echo "  14) Tokyo Night Storm pair— Storm    ↔ Day    (tmux/nvim: Storm)"
-echo "  15) Tokyo Night Moon pair — Moon     ↔ Day    (tmux/nvim: Moon)"
-echo "  16) Rosé Pine pair        — Main     ↔ Dawn   (tmux/nvim: Main)"
-echo "  17) Rosé Pine Moon pair   — Moon     ↔ Dawn   (tmux/nvim: Moon)"
-echo "  20) Dracula pair          — Dracula  ↔ Alucard (tmux/nvim/Ghostty); IDE light side: Rosé Pine Dawn"
-echo ""
-# In update mode, derive the choice from the previously-saved theme so we
-# don't reset it back to the default.
-if (( UPDATE_ONLY )) && [[ -n "$COLOR_THEME" ]]; then
-    case "$COLOR_THEME" in
-        catppuccin-frappe)     COLOR_CHOICE=1  ;;
-        catppuccin-macchiato)  COLOR_CHOICE=2  ;;
-        catppuccin-mocha)      COLOR_CHOICE=3  ;;
-        catppuccin-latte)      COLOR_CHOICE=4  ;;
-        tokyo-night)           COLOR_CHOICE=5  ;;
-        tokyo-night-storm)     COLOR_CHOICE=6  ;;
-        tokyo-night-moon)      COLOR_CHOICE=7  ;;
-        tokyo-night-day)       COLOR_CHOICE=8  ;;
-        rose-pine)             COLOR_CHOICE=9  ;;
-        rose-pine-moon)        COLOR_CHOICE=10 ;;
-        rose-pine-dawn)        COLOR_CHOICE=11 ;;
-        dracula)               COLOR_CHOICE=18 ;;
-        dracula-alucard)       COLOR_CHOICE=19 ;;
-        *)                     COLOR_CHOICE=1  ;;
+
+# Map a previously-saved COLOR_THEME (which may still be an old single-theme
+# name on machines that were installed before the pairs-only refactor) back
+# to its closest current pair. Used in --update mode and as a fall-through
+# inside the case statement below.
+_theme_key_to_choice() {
+    case "$1" in
+        1|catppuccin|catppuccin-mocha|catppuccin-latte)              echo 1  ;;
+        2|catppuccin-macchiato)                                      echo 2  ;;
+        3|catppuccin-frappe)                                         echo 3  ;;
+        4|tokyo-night|tokyo-night-day)                               echo 4  ;;
+        5|tokyo-night-storm)                                         echo 5  ;;
+        6|tokyo-night-moon)                                          echo 6  ;;
+        7|rose-pine|rose-pine-dawn)                                  echo 7  ;;
+        8|rose-pine-moon)                                            echo 8  ;;
+        9|dracula|dracula-alucard)                                   echo 9  ;;
+        10|solarized|solarized-dark|solarized-light)                 echo 10 ;;
+        11|gruvbox|gruvbox-dark|gruvbox-light)                       echo 11 ;;
+        12|everforest|everforest-dark|everforest-light)              echo 12 ;;
+        13|kanagawa|kanagawa-wave|kanagawa-lotus)                    echo 13 ;;
+        14|github|github-dark|github-light)                          echo 14 ;;
+        15|nord|nord-light)                                          echo 15 ;;
+        *)                                                           echo 1  ;;
     esac
-    print_status "Keeping color scheme: $COLOR_THEME"
+}
+
+# Precedence: --theme=<key> flag wins, then --update preserves the last
+# choice, then interactive prompt, then default (Catppuccin pair).
+if [[ -n "$THEME_FLAG" ]]; then
+    COLOR_CHOICE="$(_theme_key_to_choice "$THEME_FLAG")"
+    print_status "Theme pre-selected via --theme=$THEME_FLAG (menu choice $COLOR_CHOICE)"
+elif (( UPDATE_ONLY )) && [[ -n "$COLOR_THEME" ]]; then
+    COLOR_CHOICE="$(_theme_key_to_choice "$COLOR_THEME")"
+    print_status "Keeping color scheme: $COLOR_THEME (menu choice $COLOR_CHOICE)"
 else
-    COLOR_CHOICE="$(ask_value "Pick [1-20] (default 1): " "1")"
+    COLOR_CHOICE="$(ask_value "Pick [1-15] (default 1): " "1")"
 fi
 
 case "$COLOR_CHOICE" in
-   2) COLOR_THEME="catppuccin-macchiato"  ; GHOSTTY_THEME="catppuccin-macchiato" ;;
-   3) COLOR_THEME="catppuccin-mocha"      ; GHOSTTY_THEME="catppuccin-mocha" ;;
-   4) COLOR_THEME="catppuccin-latte"      ; GHOSTTY_THEME="catppuccin-latte" ;;
-   5) COLOR_THEME="tokyo-night"           ; GHOSTTY_THEME="tokyo-night" ;;
-   6) COLOR_THEME="tokyo-night-storm"     ; GHOSTTY_THEME="tokyo-night-storm" ;;
-   7) COLOR_THEME="tokyo-night-moon"      ; GHOSTTY_THEME="tokyo-night-moon" ;;
-   8) COLOR_THEME="tokyo-night-day"       ; GHOSTTY_THEME="tokyo-night-day" ;;
-   9) COLOR_THEME="rose-pine"             ; GHOSTTY_THEME="rose-pine" ;;
-  10) COLOR_THEME="rose-pine-moon"        ; GHOSTTY_THEME="rose-pine-moon" ;;
-  11) COLOR_THEME="rose-pine-dawn"        ; GHOSTTY_THEME="rose-pine-dawn" ;;
-  12) COLOR_THEME="catppuccin-mocha"      ; GHOSTTY_THEME="dark:catppuccin-mocha,light:catppuccin-latte" ;;
-  13) COLOR_THEME="tokyo-night"           ; GHOSTTY_THEME="dark:tokyo-night,light:tokyo-night-day" ;;
-  14) COLOR_THEME="tokyo-night-storm"     ; GHOSTTY_THEME="dark:tokyo-night-storm,light:tokyo-night-day" ;;
-  15) COLOR_THEME="tokyo-night-moon"      ; GHOSTTY_THEME="dark:tokyo-night-moon,light:tokyo-night-day" ;;
-  16) COLOR_THEME="rose-pine"             ; GHOSTTY_THEME="dark:rose-pine,light:rose-pine-dawn" ;;
-  17) COLOR_THEME="rose-pine-moon"        ; GHOSTTY_THEME="dark:rose-pine-moon,light:rose-pine-dawn" ;;
-  18) COLOR_THEME="dracula"               ; GHOSTTY_THEME="dracula" ;;
-  19) COLOR_THEME="dracula-alucard"       ; GHOSTTY_THEME="dracula-alucard" ;;
-  20) COLOR_THEME="dracula"               ; GHOSTTY_THEME="dark:dracula,light:dracula-alucard" ;;
-   *) COLOR_THEME="catppuccin-frappe"     ; GHOSTTY_THEME="catppuccin-frappe" ;;
+   1) THEME_DARK=catppuccin-mocha     ; THEME_LIGHT=catppuccin-latte    ;;
+   2) THEME_DARK=catppuccin-macchiato ; THEME_LIGHT=catppuccin-latte    ;;
+   3) THEME_DARK=catppuccin-frappe    ; THEME_LIGHT=catppuccin-latte    ;;
+   4) THEME_DARK=tokyo-night          ; THEME_LIGHT=tokyo-night-day     ;;
+   5) THEME_DARK=tokyo-night-storm    ; THEME_LIGHT=tokyo-night-day     ;;
+   6) THEME_DARK=tokyo-night-moon     ; THEME_LIGHT=tokyo-night-day     ;;
+   7) THEME_DARK=rose-pine            ; THEME_LIGHT=rose-pine-dawn      ;;
+   8) THEME_DARK=rose-pine-moon       ; THEME_LIGHT=rose-pine-dawn      ;;
+   9) THEME_DARK=dracula              ; THEME_LIGHT=dracula-alucard     ;;
+  10) THEME_DARK=solarized-dark       ; THEME_LIGHT=solarized-light     ;;
+  11) THEME_DARK=gruvbox-dark         ; THEME_LIGHT=gruvbox-light       ;;
+  12) THEME_DARK=everforest-dark      ; THEME_LIGHT=everforest-light    ;;
+  13) THEME_DARK=kanagawa-wave        ; THEME_LIGHT=kanagawa-lotus      ;;
+  14) THEME_DARK=github-dark          ; THEME_LIGHT=github-light        ;;
+  15) THEME_DARK=nord                 ; THEME_LIGHT=nord-light          ;;
+   *) THEME_DARK=catppuccin-mocha     ; THEME_LIGHT=catppuccin-latte    ;;
 esac
+
+COLOR_THEME="$THEME_DARK"
+GHOSTTY_THEME="dark:$THEME_DARK,light:$THEME_LIGHT"
 
 echo "export COLOR_THEME=$COLOR_THEME" > ~/.config/terminal-color-theme
-print_success "Color scheme: $COLOR_THEME (Ghostty: $GHOSTTY_THEME)"
-
-# Write dark/light pair info for theme-sync + Cursor/VSCode auto-detect.
-# THEME_DARK / THEME_LIGHT here drive: (a) the shell `theme-sync` function for
-# tmux/nvim/bat/delta, and (b) `workbench.preferred{Dark,Light}ColorTheme` in
-# Cursor and VS Code (via $VSCODE_DARK_THEME / $VSCODE_LIGHT_THEME below) so
-# the IDEs follow macOS appearance changes natively.
-case "$COLOR_CHOICE" in
-  12) THEME_DARK=catppuccin-mocha   ; THEME_LIGHT=catppuccin-latte    ;;
-  13) THEME_DARK=tokyo-night        ; THEME_LIGHT=tokyo-night-day     ;;
-  14) THEME_DARK=tokyo-night-storm  ; THEME_LIGHT=tokyo-night-day     ;;
-  15) THEME_DARK=tokyo-night-moon   ; THEME_LIGHT=tokyo-night-day     ;;
-  16) THEME_DARK=rose-pine          ; THEME_LIGHT=rose-pine-dawn      ;;
-  17) THEME_DARK=rose-pine-moon     ; THEME_LIGHT=rose-pine-dawn      ;;
-  20) THEME_DARK=dracula            ; THEME_LIGHT=dracula-alucard     ;;
-  *)  THEME_DARK=""                 ; THEME_LIGHT=""                  ;;   # single theme
-esac
-
-if [[ -n "$THEME_DARK" ]]; then
-    printf 'export THEME_DARK=%s\nexport THEME_LIGHT=%s\n' \
-        "$THEME_DARK" "$THEME_LIGHT" > ~/.config/terminal-theme-pair
-    print_success "theme-sync pair saved (run: theme-sync, or let Cursor/VSCode auto-switch)"
-else
-    rm -f ~/.config/terminal-theme-pair
-fi
+printf 'export THEME_DARK=%s\nexport THEME_LIGHT=%s\n' \
+    "$THEME_DARK" "$THEME_LIGHT" > ~/.config/terminal-theme-pair
+print_success "Color pair: $THEME_DARK ↔ $THEME_LIGHT (Ghostty: $GHOSTTY_THEME)"
 
 # Look up VS Code / Cursor theme metadata for a given color-theme key.
 # Sets VS_NAME, VS_ICON, VS_BORDER, VS_EXT, VS_SLACK as side-effects (avoiding
@@ -679,6 +679,57 @@ _vscode_theme_meta() {
         VS_NAME="Dracula Theme Soft"; VS_ICON="catppuccin-latte"; VS_EXT="dracula-theme.theme-dracula"
         VS_BORDER="#cfcfde"
         VS_SLACK="#fffbeb,#f0ead8,#644ac9,#fffbeb,#cfcfde,#1f1f1f,#14710a,#cb3a2a" ;;
+      solarized-dark)
+        VS_NAME="Solarized Dark"; VS_ICON="catppuccin-mocha"; VS_EXT=""
+        VS_BORDER="#073642"
+        VS_SLACK="#002b36,#073642,#268bd2,#002b36,#586e75,#93a1a1,#859900,#dc322f" ;;
+      solarized-light)
+        VS_NAME="Solarized Light"; VS_ICON="catppuccin-latte"; VS_EXT=""
+        VS_BORDER="#eee8d5"
+        VS_SLACK="#fdf6e3,#eee8d5,#268bd2,#fdf6e3,#93a1a1,#586e75,#859900,#dc322f" ;;
+      gruvbox-dark)
+        VS_NAME="Gruvbox Dark Medium"; VS_ICON="catppuccin-mocha"; VS_EXT="jdinhlife.gruvbox"
+        VS_BORDER="#3c3836"
+        VS_SLACK="#282828,#3c3836,#fabd2f,#282828,#504945,#ebdbb2,#b8bb26,#fb4934" ;;
+      gruvbox-light)
+        VS_NAME="Gruvbox Light Medium"; VS_ICON="catppuccin-latte"; VS_EXT="jdinhlife.gruvbox"
+        VS_BORDER="#ebdbb2"
+        VS_SLACK="#fbf1c7,#ebdbb2,#b57614,#fbf1c7,#d5c4a1,#3c3836,#79740e,#9d0006" ;;
+      everforest-dark)
+        VS_NAME="Everforest Dark"; VS_ICON="catppuccin-mocha"; VS_EXT="sainnhe.everforest"
+        VS_BORDER="#343f44"
+        VS_SLACK="#2d353b,#343f44,#a7c080,#2d353b,#475258,#d3c6aa,#a7c080,#e67e80" ;;
+      everforest-light)
+        VS_NAME="Everforest Light"; VS_ICON="catppuccin-latte"; VS_EXT="sainnhe.everforest"
+        VS_BORDER="#f4f0d9"
+        VS_SLACK="#fdf6e3,#f4f0d9,#8da101,#fdf6e3,#e0dcc7,#5c6a72,#8da101,#f85552" ;;
+      kanagawa-wave)
+        VS_NAME="Kanagawa"; VS_ICON="catppuccin-mocha"; VS_EXT="qufiwefefwoyn.kanagawa"
+        VS_BORDER="#2a2a37"
+        VS_SLACK="#1f1f28,#2a2a37,#7e9cd8,#1f1f28,#363646,#dcd7ba,#98bb6c,#c34043" ;;
+      kanagawa-lotus)
+        VS_NAME="Kanagawa Lotus"; VS_ICON="catppuccin-latte"; VS_EXT="qufiwefefwoyn.kanagawa"
+        VS_BORDER="#e5dec7"
+        VS_SLACK="#f2ecbc,#e5dec7,#4d699b,#f2ecbc,#d0c8a4,#545464,#6f894e,#c84053" ;;
+      github-dark)
+        VS_NAME="GitHub Dark Default"; VS_ICON="catppuccin-mocha"; VS_EXT="GitHub.github-vscode-theme"
+        VS_BORDER="#30363d"
+        VS_SLACK="#0d1117,#161b22,#58a6ff,#0d1117,#30363d,#c9d1d9,#3fb950,#ff7b72" ;;
+      github-light)
+        VS_NAME="GitHub Light Default"; VS_ICON="catppuccin-latte"; VS_EXT="GitHub.github-vscode-theme"
+        VS_BORDER="#d0d7de"
+        VS_SLACK="#ffffff,#f6f8fa,#0969da,#ffffff,#d0d7de,#24292f,#1a7f37,#cf222e" ;;
+      nord)
+        VS_NAME="Nord"; VS_ICON="catppuccin-mocha"; VS_EXT="arcticicestudio.nord-visual-studio-code"
+        VS_BORDER="#3b4252"
+        VS_SLACK="#2e3440,#3b4252,#88c0d0,#2e3440,#4c566a,#d8dee9,#a3be8c,#bf616a" ;;
+      nord-light)
+        # The Nord VS Code extension only ships a vs-dark theme. For the light
+        # side of the Nord pair we fall back to Cursor's built-in "Default
+        # Light Modern" so autoDetectColorScheme can swap on macOS appearance.
+        VS_NAME="Default Light Modern"; VS_ICON="catppuccin-latte"; VS_EXT=""
+        VS_BORDER="#e5e9f0"
+        VS_SLACK="#eceff4,#e5e9f0,#5e81ac,#eceff4,#d8dee9,#2e3440,#a3be8c,#bf616a" ;;
       *)
         VS_NAME=""; VS_ICON=""; VS_EXT=""; VS_BORDER=""; VS_SLACK="" ;;
     esac
@@ -693,29 +744,19 @@ VSCODE_BORDER_COLOR="$VS_BORDER"
 SLACK_THEME="$VS_SLACK"
 
 # Cursor / VS Code auto-detect macOS dark↔light mode.
-# When a theme PAIR was chosen, set the preferred-{Dark,Light} settings so the
-# IDE follows macOS appearance changes natively (no shell helper needed).
-# When a SINGLE theme was chosen, autoDetect=false and both prefs fall back to
-# the chosen theme — Cursor/VS Code then ignore appearance changes.
-if [[ -n "$THEME_DARK" ]]; then
-    VSCODE_AUTO_DETECT="true"
-    _vscode_theme_meta "$THEME_DARK";  VSCODE_DARK_THEME="$VS_NAME";  VSCODE_DARK_EXT="$VS_EXT"
-    _vscode_theme_meta "$THEME_LIGHT"; VSCODE_LIGHT_THEME="$VS_NAME"; VSCODE_LIGHT_EXT="$VS_EXT"
-    # Cursor/VS Code only swap on macOS appearance when preferredLight points at
-    # a vs/hc-light theme. The Dracula extension's "Soft" variant is still
-    # vs-dark, so autoDetectColorScheme silently no-ops with it. Substitute a
-    # real light theme (Rosé Pine Dawn) on the IDE side only — tmux/nvim/Ghostty
-    # keep using dracula-alucard since each of those has a real light recipe.
-    if [[ "$THEME_LIGHT" == "dracula-alucard" ]]; then
-        _vscode_theme_meta "rose-pine-dawn"
-        VSCODE_LIGHT_THEME="$VS_NAME"; VSCODE_LIGHT_EXT="$VS_EXT"
-    fi
-else
-    VSCODE_AUTO_DETECT="false"
-    VSCODE_DARK_THEME="$VSCODE_COLOR_THEME"
-    VSCODE_LIGHT_THEME="$VSCODE_COLOR_THEME"
-    VSCODE_DARK_EXT=""
-    VSCODE_LIGHT_EXT=""
+# Pairs-only menu means we always have $THEME_DARK / $THEME_LIGHT set, so
+# autoDetectColorScheme is always on and preferred{Dark,Light} drive the swap.
+VSCODE_AUTO_DETECT="true"
+_vscode_theme_meta "$THEME_DARK";  VSCODE_DARK_THEME="$VS_NAME";  VSCODE_DARK_EXT="$VS_EXT"
+_vscode_theme_meta "$THEME_LIGHT"; VSCODE_LIGHT_THEME="$VS_NAME"; VSCODE_LIGHT_EXT="$VS_EXT"
+# Cursor/VS Code only swap on macOS appearance when preferredLight points at
+# a vs/hc-light theme. The Dracula extension's "Soft" variant is vs-dark
+# (autoDetectColorScheme silently no-ops with it), so substitute a real light
+# theme (Rosé Pine Dawn) on the IDE side only — tmux/nvim/Ghostty keep using
+# dracula-alucard since each of those has a real light recipe.
+if [[ "$THEME_LIGHT" == "dracula-alucard" ]]; then
+    _vscode_theme_meta "rose-pine-dawn"
+    VSCODE_LIGHT_THEME="$VS_NAME"; VSCODE_LIGHT_EXT="$VS_EXT"
 fi
 
 # =============================================================================
@@ -1176,15 +1217,12 @@ echo "  1. Restart Ghostty (or reload: Cmd+Shift+,)  ← picks up new theme"
 echo "  2. Reload shell:  source ~/.zshrc"
 echo "  3. Run 'nvim'  — lazy.nvim auto-installs plugins on first launch"
 echo ""
-echo "Color scheme: $COLOR_THEME"
-echo "  To change: run ./install.sh again (section 10) or edit directly:"
-echo "    Ghostty : ~/.config/ghostty/config  (theme = <name>)"
-echo "    Tmux    : cp configs/tmux/themes/<name>.conf ~/.config/tmux-theme.conf && tmux source ~/.tmux.conf"
-echo "    Neovim  : cp configs/nvim/themes/<name>.lua ~/.config/nvim/lua/active_theme.lua"
-echo "  Available:
-    Catppuccin : catppuccin-frappe  catppuccin-macchiato  catppuccin-mocha  catppuccin-latte
-    Tokyo Night: tokyo-night  tokyo-night-storm  tokyo-night-moon  tokyo-night-day
-    Rosé Pine  : rose-pine  rose-pine-moon  rose-pine-dawn"
+echo "Color pair: $THEME_DARK ↔ $THEME_LIGHT  (auto-switches with macOS appearance)"
+echo "  To change: ./install.sh --update --theme=<n|key>"
+echo "    Number 1-15 or key: catppuccin, catppuccin-macchiato, catppuccin-frappe,"
+echo "                        tokyo-night, tokyo-night-storm, tokyo-night-moon,"
+echo "                        rose-pine, rose-pine-moon, dracula,"
+echo "                        solarized, gruvbox, everforest, kanagawa, github, nord"
 echo ""
 echo "Tmux mouse mode: $TMUX_MOUSE_CHOICE"
 echo "  To flip later: cp ~/.config/tmux/extras/mouse-<on|off>.conf ~/.config/tmux-mouse.conf"

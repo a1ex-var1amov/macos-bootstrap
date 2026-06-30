@@ -1,6 +1,6 @@
 # macOS Bootstrap + Terminal Config
 
-A complete macOS developer bootstrap: one script that takes a fresh machine to a fully configured, themed terminal environment. Pick one of 20 colour schemes (or a dark/light pair that follows the system appearance) and the installer themes the terminal, prompt, tmux, diffs, Neovim, Cursor, VS Code, and Slack to match.
+A complete macOS developer bootstrap: one script that takes a fresh machine to a fully configured, themed terminal environment. Pick one of 15 colour-scheme pairs that follow macOS appearance, and the installer themes Ghostty, Cursor, VS Code, tmux, Neovim, Slack, `bat`, and `delta` to match — with auto-switching between the dark and light side as the system flips.
 
 ## What It Sets Up
 
@@ -19,7 +19,27 @@ A complete macOS developer bootstrap: one script that takes a fresh machine to a
 | **Languages** | Go, Node.js via fnm, Terraform |
 | **Modern CLI** | bat, eza, ripgrep, fd, delta, btop, duf, dust, yazi, procs, lazygit, lazydocker, mosh, httpie, and more |
 
-Pick a theme PAIR (options 12-20 in the installer) and the whole stack — Ghostty, Cursor, VS Code, Slack, plus tmux/nvim via the `theme-sync` shell function — follows macOS appearance changes natively.
+Pick any of the 15 theme pairs in the installer and the whole stack — Ghostty, Cursor, VS Code, Slack, plus tmux/nvim via the `theme-sync` shell function — follows macOS appearance changes natively.
+
+Available pairs (pick one in the installer menu, or pass `--theme=<key>` for unattended installs):
+
+| # | Pair | Dark side | Light side | Best for |
+|---|------|-----------|------------|----------|
+| 1 | Catppuccin                | Mocha     | Latte      | Cool purple, balanced contrast (default) |
+| 2 | Catppuccin Macchiato      | Macchiato | Latte      | Cool, slightly lighter dark |
+| 3 | Catppuccin Frappé         | Frappé    | Latte      | Cool, lightest dark variant |
+| 4 | Tokyo Night               | Night     | Day        | Deep blue-purple, vivid syntax |
+| 5 | Tokyo Night Storm         | Storm     | Day        | Tokyo Night, softer dark |
+| 6 | Tokyo Night Moon          | Moon      | Day        | Tokyo Night, muted dark |
+| 7 | Rosé Pine                 | Main      | Dawn       | Warm pink-cream, low contrast |
+| 8 | Rosé Pine Moon            | Moon      | Dawn       | Deeper Rosé Pine dark |
+| 9 | Dracula                   | Dracula   | Alucard    | Classic purple (IDE light side: Rosé Pine Dawn — Dracula Soft is still vs-dark) |
+| 10 | Solarized                | Dark      | Light      | Ethan Schoonover's ergonomic palette |
+| 11 | Gruvbox                  | Dark      | Light      | Warm retro earth tones |
+| 12 | Everforest               | Dark      | Light      | Calming forest green |
+| 13 | Kanagawa                 | Wave      | Lotus      | Hokusai-painting palette |
+| 14 | GitHub                   | Dark      | Light      | What github.com uses |
+| 15 | Nord                     | Nord      | Nord Light | Cool arctic blues (IDE light side: Default Light Modern) |
 
 ## Quick Start
 
@@ -230,7 +250,7 @@ Each theme file is just 11 color tokens (`@bg`, `@accent`, etc.) — see `config
 
 ### Cursor / VS Code follow macOS dark↔light automatically
 
-When you pick a theme PAIR during `./install.sh` (options 12-20), the installer wires up Cursor and VS Code to natively follow the macOS appearance:
+Every theme pair wires Cursor and VS Code to natively follow the macOS appearance:
 
 - `window.autoDetectColorScheme = true`
 - `workbench.preferredDarkColorTheme = <dark theme>` (e.g. Catppuccin Mocha)
@@ -238,7 +258,7 @@ When you pick a theme PAIR during `./install.sh` (options 12-20), the installer 
 
 Toggle macOS appearance (System Settings -> Appearance, or via Raycast / a Shortcut) and Cursor swaps themes instantly — no IDE restart, no helper script. The terminal stack (`tmux`, `bat`, `delta`, `neovim`) is updated by the existing `theme-sync` shell function. Ghostty already follows macOS natively via its `dark:foo,light:bar` config syntax.
 
-When you pick a single theme (options 1-11, 18, 19) the installer flips `autoDetectColorScheme` to `false` so Cursor sticks with that one regardless of macOS mode.
+For unattended installs (e.g. provisioning a new mac), `./install.sh --yes --theme=gruvbox` (or `--theme=11`) picks the pair non-interactively. The flag accepts either the menu number (1–15) or any name in the key list above. See `./install.sh --help` for the full mapping.
 
 ### Tmux mouse mode (chosen at install time)
 

@@ -130,6 +130,60 @@ require("lazy").setup({
   },
 
   -- -------------------------------------------------------------------------
+  -- Solarized — Ethan Schoonover's eye-friendly palette (dark + light).
+  -- active_theme.lua picks the variant via colorscheme("solarized").
+  -- -------------------------------------------------------------------------
+  {
+    "maxmx03/solarized.nvim",
+    priority = 1000,
+  },
+
+  -- -------------------------------------------------------------------------
+  -- Gruvbox — warm retro earth tones (dark + light variants).
+  -- active_theme.lua calls colorscheme("gruvbox") with vim.o.background.
+  -- -------------------------------------------------------------------------
+  {
+    "ellisonleao/gruvbox.nvim",
+    priority = 1000,
+  },
+
+  -- -------------------------------------------------------------------------
+  -- Everforest — calming forest green (dark + light, by sainnhe).
+  -- Vimscript-based but cleanly integrates with treesitter/LSP.
+  -- -------------------------------------------------------------------------
+  {
+    "sainnhe/everforest",
+    priority = 1000,
+  },
+
+  -- -------------------------------------------------------------------------
+  -- Kanagawa — Hokusai-painting-inspired palette (wave/lotus = dark/light).
+  -- active_theme.lua calls colorscheme("kanagawa-wave" or "kanagawa-lotus").
+  -- -------------------------------------------------------------------------
+  {
+    "rebelot/kanagawa.nvim",
+    priority = 1000,
+  },
+
+  -- -------------------------------------------------------------------------
+  -- GitHub — familiar VS Code GitHub themes ported to Neovim (dark + light).
+  -- active_theme.lua calls colorscheme("github_dark_default" or "_light_default").
+  -- -------------------------------------------------------------------------
+  {
+    "projekt0n/github-nvim-theme",
+    priority = 1000,
+  },
+
+  -- -------------------------------------------------------------------------
+  -- Nord — cool arctic blues (dark only; the light pair uses theme_base.lua).
+  -- active_theme.lua calls colorscheme("nord").
+  -- -------------------------------------------------------------------------
+  {
+    "shaunsingh/nord.nvim",
+    priority = 1000,
+  },
+
+  -- -------------------------------------------------------------------------
   -- Treesitter — proper syntax highlighting and indentation
   -- Requires a C compiler (xcode-select --install on macOS) to compile parsers.
   -- :TSUpdateSync (instead of :TSUpdate) compiles parsers synchronously during

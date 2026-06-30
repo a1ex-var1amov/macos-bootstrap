@@ -157,18 +157,25 @@ for tmpl in configs/cursor/settings-base.json configs/vscode/settings-base.json;
     done < <(grep -oE '__[A-Z_]+__' "$REPO/$tmpl" | sort -u)
 done
 
-# Each ghostty theme referenced by install.sh must exist in configs/ghostty/themes/.
-section "Ghostty theme references"
+# Each theme name picked by install.sh (THEME_DARK/THEME_LIGHT in the pair case
+# statement) must have matching theme files in ghostty/tmux/nvim. Catches "added
+# a new pair but forgot one of the theme files" the moment install.sh references
+# something we don't ship.
+section "Theme files referenced by install.sh"
 
-GHOSTTY_THEMES=$(grep -oE 'GHOSTTY_THEME="[a-z-]+"' "$REPO/install.sh" \
-                 | sed 's|GHOSTTY_THEME="||; s|"||' \
-                 | sort -u)
-for gt in $GHOSTTY_THEMES; do
-    [[ -z "$gt" ]] && continue
-    if [[ -f "$REPO/configs/ghostty/themes/$gt" ]]; then
-        ok "ghostty theme: $gt"
+THEME_NAMES=$(grep -oE 'THEME_(DARK|LIGHT)=[a-z-]+' "$REPO/install.sh" \
+              | sed -E 's|THEME_(DARK\|LIGHT)=||' \
+              | sort -u)
+for tn in $THEME_NAMES; do
+    [[ -z "$tn" ]] && continue
+    miss=()
+    [[ -f "$REPO/configs/ghostty/themes/$tn"           ]] || miss+=("ghostty")
+    [[ -f "$REPO/configs/tmux/themes/$tn.conf"         ]] || miss+=("tmux")
+    [[ -f "$REPO/configs/nvim/themes/$tn.lua"          ]] || miss+=("nvim")
+    if (( ${#miss[@]} == 0 )); then
+        ok "theme files present for: $tn"
     else
-        fail "ghostty theme missing: $gt"
+        fail "theme '$tn' missing: ${miss[*]} (referenced from install.sh)"
     fi
 done
 
