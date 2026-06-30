@@ -57,7 +57,7 @@ cp configs/nvim/themes/tokyo-night.lua ~/.config/nvim/lua/active_theme.lua
 | `configs/git/gitignore_global` | `~/.gitignore_global` |
 | `configs/cursor/settings-base.json` | `~/Library/Application Support/Cursor/User/settings.json` (rendered through `_render_vscode_settings`) |
 | `configs/vscode/settings-base.json` | `~/Library/Application Support/Code/User/settings.json` (rendered through `_render_vscode_settings`) |
-| `configs/ghostty/config-base` | `~/.config/ghostty/config` (theme line substituted by `sed`) |
+| `configs/ghostty/config-base` | `~/.config/ghostty/config` (theme line substituted by `sed`); plus a one-line `config-file = ~/.config/ghostty/config` shim written to `~/Library/Application Support/com.mitchellh.ghostty/config` so the macOS app-bundle path can't shadow our XDG config |
 | `configs/ssh/config-base` | `~/.ssh/config` (only if absent) |
 | `configs/tmux/extras/mouse-{on,off}.conf` | `~/.config/tmux/extras/` (one of them copied to `~/.config/tmux-mouse.conf`) |
 | `cheatsheets/*.txt` | `~/.config/*.txt` |
@@ -161,6 +161,18 @@ Added in `tmux.conf` so they're always available:
 
 ### Clock-mode colour resolution
 `clock-mode-colour` is a raw-colour option in tmux — it does NOT expand `#{@token}` format strings. After sourcing the theme file, `tmux.conf` runs a one-liner `run-shell` that reads `#{@accent}` via `display-message -p` and feeds the literal hex into `set -g clock-mode-colour`. Do NOT add `set -g clock-mode-colour "#{@accent}"` back — it throws `bad colour: #{@accent}` on every reload.
+
+### Ghostty config precedence on macOS
+Ghostty looks for config in two places on macOS:
+1. `~/.config/ghostty/config` (XDG path — what `install.sh` writes)
+2. `~/Library/Application Support/com.mitchellh.ghostty/config` (macOS-conventional path — auto-created by Ghostty on first launch if no config exists)
+
+The AppSupport file can shadow our XDG config and silently strip the `theme = …` directive (because the auto-template doesn't include one). To prevent surprises, `install.sh` writes a one-line `config-file = ~/.config/ghostty/config` shim into the AppSupport path so it always defers to our managed config. The check is idempotent (skipped when the line is already there) and backs up any prior content. Symptoms of forgetting this: Ghostty on macOS uses its default palette regardless of which theme is set in `~/.config/ghostty/config`, and the dark/light pair never swaps with macOS appearance.
+
+When changing how the Ghostty config is rendered, update BOTH the XDG render block (`sed … > ~/.config/ghostty/config`) and verify the AppSupport shim is still a single `config-file =` line. The AppSupport shim must NOT contain anything else — extra keys there override XDG.
+
+### Cursor / VS Code light theme for Dracula pair
+Option 20 (Dracula pair) maps `THEME_LIGHT=dracula-alucard` for tmux/nvim/Ghostty (all three have real light recipes), but the Dracula VS Code extension only ships `vs-dark` themes — "Dracula Theme Soft" is still dark. `window.autoDetectColorScheme` will silently no-op when `preferredLightColorTheme` points at a `vs-dark` theme. `install.sh` therefore substitutes `rose-pine-dawn` for the IDE light side only (see the `if [[ "$THEME_LIGHT" == "dracula-alucard" ]]` block right after `_vscode_theme_meta "$THEME_LIGHT"`). When adding a new theme pair, verify the light side has `uiTheme: vs` or `hc-light` in its extension's `package.json` — otherwise apply the same override pattern.
 
 ### Optional tmux session persistence
 A commented TPM + tmux-resurrect + tmux-continuum block lives near the bottom of `tmux.conf` (after the theme source-file). Users opt in by uncommenting and running the TPM clone one-liner from the README. Default ships disabled to keep tmux's startup zero-dependency.

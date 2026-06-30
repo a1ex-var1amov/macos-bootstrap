@@ -751,6 +751,26 @@ sed "s|^theme = .*|theme = $GHOSTTY_THEME|" \
     "$SCRIPT_DIR/configs/ghostty/config-base" > ~/.config/ghostty/config
 print_success "Ghostty config (theme: $GHOSTTY_THEME)"
 
+# Ghostty on macOS also reads ~/Library/Application Support/com.mitchellh.ghostty/config
+# and auto-creates a template there on first launch when no other config is found.
+# Once that template exists it can shadow ~/.config/ghostty/config and produce
+# surprises like "the theme I configured isn't applying". Make the app-support
+# file a thin include of our XDG config so install.sh remains the single source
+# of truth regardless of how Ghostty was launched.
+GHOSTTY_APP_SUPPORT="$HOME/Library/Application Support/com.mitchellh.ghostty/config"
+GHOSTTY_INCLUDE_LINE='config-file = ~/.config/ghostty/config'
+if [[ -f "$GHOSTTY_APP_SUPPORT" ]]; then
+    if ! command grep -Fxq "$GHOSTTY_INCLUDE_LINE" "$GHOSTTY_APP_SUPPORT"; then
+        backup_file "$GHOSTTY_APP_SUPPORT"
+        printf '%s\n' "$GHOSTTY_INCLUDE_LINE" > "$GHOSTTY_APP_SUPPORT"
+        print_success "Ghostty AppSupport config now includes ~/.config/ghostty/config"
+    fi
+else
+    mkdir -p "$(dirname "$GHOSTTY_APP_SUPPORT")"
+    printf '%s\n' "$GHOSTTY_INCLUDE_LINE" > "$GHOSTTY_APP_SUPPORT"
+    print_success "Ghostty AppSupport config created (includes ~/.config/ghostty/config)"
+fi
+
 # Zsh
 backup_file ~/.zshrc
 cp "$SCRIPT_DIR/configs/zsh/zshrc" ~/.zshrc
