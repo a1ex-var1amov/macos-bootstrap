@@ -1,3 +1,32 @@
+# =============================================================================
+# IDE shell-env probe fast path
+#
+# VS Code and Cursor probe the shell on startup by running `zsh -ilc ...` with
+# VSCODE_RESOLVING_ENVIRONMENT=1 set. They expect a quick exit so they can read
+# PATH / EDITOR / etc. — if the full .zshrc (compinit, plugins, atuin, prompt
+# init) takes too long on a cold cache or busy disk, the IDE shows:
+#   "Unable to resolve your shell environment in a reasonable time..."
+#
+# When the probe variable is set we only export the essentials the IDE actually
+# cares about and `return` before the heavy initialisation. This does NOT
+# affect real terminal sessions opened inside Cursor (the IDE only sets the var
+# during the probe, not for user-facing terminals).
+# =============================================================================
+if [[ -n "$VSCODE_RESOLVING_ENVIRONMENT" ]]; then
+    typeset -U path
+    [[ -d /opt/homebrew/bin ]] && path=(/opt/homebrew/bin /opt/homebrew/sbin $path)
+    [[ -d /usr/local/bin    ]] && path=(/usr/local/bin    /usr/local/sbin    $path)
+    path=("${KREW_ROOT:-$HOME/.krew}/bin" "$HOME/.local/bin" $path)
+    export PATH
+    if command -v nvim >/dev/null 2>&1; then
+        export EDITOR="nvim" VISUAL="nvim"
+    else
+        export EDITOR="vim"  VISUAL="vim"
+    fi
+    export PAGER="less" LESS="-R"
+    return
+fi
+
 # --- Homebrew completions BEFORE compinit ---
 if [[ -d /opt/homebrew/share/zsh/site-functions ]]; then
   fpath=(/opt/homebrew/share/zsh/site-functions $fpath)
