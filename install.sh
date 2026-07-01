@@ -213,8 +213,11 @@ for f in go terraform; do
 done
 
 # Modern CLI replacements
+# Note: gh-dash is NOT a Homebrew formula — it's a `gh` CLI extension, so it's
+# installed separately below (after `gh` itself is confirmed present) via
+# `gh extension install dlvhdr/gh-dash` instead of `brew install`.
 MISSING_CLI=()
-for f in bat eza ripgrep fd git-delta btop jq yq ncdu duf dust tldr lazygit lazydocker podman podman-compose yazi procs gh-dash; do
+for f in bat eza ripgrep fd git-delta btop jq yq ncdu duf dust tldr lazygit lazydocker podman podman-compose yazi procs; do
     is_installed "$f" || MISSING_CLI+=("$f")
 done
 
@@ -268,6 +271,20 @@ if ! fc-list 2>/dev/null | grep -qi "nerd\|jetbrains"; then
     fi
 else
     print_success "Nerd Font found"
+fi
+
+# gh-dash — a `gh` CLI extension (dlvhdr/gh-dash), not a Homebrew formula.
+# `brew install gh-dash` always fails with "No formulae or casks found";
+# it must be installed via `gh extension install` once `gh` itself is present.
+if command_exists gh; then
+    print_status "Checking gh-dash extension..."
+    if gh extension list 2>/dev/null | grep -q "dlvhdr/gh-dash"; then
+        print_success "gh-dash extension found"
+    elif ask "Install gh-dash (GitHub CLI dashboard extension)? [Y/n]" Y; then
+        gh extension install dlvhdr/gh-dash \
+            && print_success "gh-dash extension installed" \
+            || print_warning "Could not install gh-dash extension (run manually: gh extension install dlvhdr/gh-dash)"
+    fi
 fi
 fi  # ! UPDATE_ONLY
 
@@ -634,9 +651,10 @@ print_success "Ghostty config (theme: $GHOSTTY_THEME)"
 # and auto-creates a template there on first launch when no other config is found.
 # Once that template exists it can shadow ~/.config/ghostty/config and produce
 # surprises like "the theme I configured isn't applying". `ensure_ghostty_appsupport_shim`
-# from lib/theme-lib.sh makes the app-support file a thin include of our XDG
-# config so install.sh remains the single source of truth regardless of how
-# Ghostty was launched.
+# from lib/theme-lib.sh keeps the app-support file mirroring our XDG config
+# (full content, not a `config-file` redirect — see CLAUDE.md for why a
+# redirect trips a known Ghostty "cycle detected" bug) so install.sh remains
+# the single source of truth regardless of how Ghostty was launched.
 ECHO_OK=print_success ensure_ghostty_appsupport_shim
 
 # Zsh

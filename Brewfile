@@ -34,7 +34,9 @@ brew "fd"
 brew "fnm"
 brew "fzf"
 brew "gh"
-brew "gh-dash"
+# gh-dash is a `gh` CLI extension, not a Homebrew formula/cask — `brew bundle`
+# has no way to install it. Run `gh extension install dlvhdr/gh-dash` instead
+# (install.sh does this automatically).
 brew "git-delta"
 brew "git-filter-repo"
 brew "git-lfs"

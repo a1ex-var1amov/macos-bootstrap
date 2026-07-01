@@ -82,7 +82,7 @@ Skip-work fast path: if the requested pair equals the current one, `theme-switch
 | `configs/git/gitignore_global` | `~/.gitignore_global` |
 | `configs/cursor/settings-base.json` | `~/Library/Application Support/Cursor/User/settings.json` (rendered through `render_vscode_settings` in `lib/theme-lib.sh`) |
 | `configs/vscode/settings-base.json` | `~/Library/Application Support/Code/User/settings.json` (rendered through `render_vscode_settings` in `lib/theme-lib.sh`) |
-| `configs/ghostty/config-base` | `~/.config/ghostty/config` (theme line substituted by `render_ghostty_config` in `lib/theme-lib.sh`); plus a one-line `config-file = ~/.config/ghostty/config` shim written to `~/Library/Application Support/com.mitchellh.ghostty/config` so the macOS app-bundle path can't shadow our XDG config |
+| `configs/ghostty/config-base` | `~/.config/ghostty/config` (theme line substituted by `render_ghostty_config` in `lib/theme-lib.sh`); mirrored in full to `~/Library/Application Support/com.mitchellh.ghostty/config` by `ensure_ghostty_appsupport_shim` so the macOS app-bundle path can't shadow (or diverge from) our XDG config |
 | `configs/ssh/config-base` | `~/.ssh/config` (only if absent) |
 | `configs/tmux/extras/mouse-{on,off}.conf` | `~/.config/tmux/extras/` (one of them copied to `~/.config/tmux-mouse.conf`) |
 | `cheatsheets/*.txt` | `~/.config/*.txt` |
@@ -194,9 +194,15 @@ Ghostty looks for config in two places on macOS:
 1. `~/.config/ghostty/config` (XDG path — what `install.sh` writes)
 2. `~/Library/Application Support/com.mitchellh.ghostty/config` (macOS-conventional path — auto-created by Ghostty on first launch if no config exists)
 
-The AppSupport file can shadow our XDG config and silently strip the `theme = …` directive (because the auto-template doesn't include one). To prevent surprises, `install.sh` writes a one-line `config-file = ~/.config/ghostty/config` shim into the AppSupport path so it always defers to our managed config. The check is idempotent (skipped when the line is already there) and backs up any prior content. Symptoms of forgetting this: Ghostty on macOS uses its default palette regardless of which theme is set in `~/.config/ghostty/config`, and the dark/light pair never swaps with macOS appearance.
+The AppSupport file can shadow our XDG config and silently strip the `theme = …` directive (because the auto-template doesn't include one). Symptoms of forgetting to handle this: Ghostty on macOS uses its default palette regardless of which theme is set in `~/.config/ghostty/config`, and the dark/light pair never swaps with macOS appearance.
 
-When changing how the Ghostty config is rendered, update BOTH the XDG render block (`sed … > ~/.config/ghostty/config`) and verify the AppSupport shim is still a single `config-file =` line. The AppSupport shim must NOT contain anything else — extra keys there override XDG.
+`ensure_ghostty_appsupport_shim` (in `lib/theme-lib.sh`) handles this by **mirroring the rendered content** of `~/.config/ghostty/config` into the AppSupport path, minus any `config-file = ...` line (idempotent — only writes when the content actually differs). This is deliberately NOT a one-line `config-file = ~/.config/ghostty/config` redirect anymore — that approach trips a known Ghostty bug (ghostty-org/ghostty#11323): Ghostty unconditionally auto-loads BOTH the XDG config and the AppSupport config every launch (not just when one is missing — "the default config file is always loaded" per a Ghostty maintainer), so a `config-file` directive inside the AppSupport file that points back at the XDG file makes Ghostty visit that same file twice in one pass, and its cycle detector flags that as `cycle detected` — a real, reproducible config error, not a true cycle.
+
+The `config-file` line is stripped from the AppSupport copy (not just avoided as a *redirect*) for the same reason one level deeper: our XDG config itself ends with `config-file = ?~/.config/ghostty/config.local` to support local overrides. If the AppSupport mirror kept that line too, `config.local` would be reachable via two independent top-level parents (XDG config and the AppSupport mirror, both auto-loaded as defaults) in the same session — the identical diamond shape that trips the bug, just via a leaf file instead of the AppSupport-to-XDG redirect. Only the XDG file may ever contain a `config-file` directive; the AppSupport mirror carries every literal setting except that.
+
+If you ever see "cycle detected" pointing at a Ghostty config file, check for ANY `config-file` directive that could cause the same file to be reached from two different default entry points, and replace it with duplicated (non-`config-file`) content instead.
+
+When changing how the Ghostty config is rendered, update the XDG render block (`sed … > ~/.config/ghostty/config`) and then call `ensure_ghostty_appsupport_shim` (or re-run `theme-switch`) so the AppSupport mirror stays in sync — never write a `config-file =` directive into the AppSupport path.
 
 ### Cursor / VS Code light theme overrides for "no real light variant" cases
 Two theme pairs need a special-case override on the IDE side because their extension's "light" variant isn't actually a `vs`/`hc-light` theme — `autoDetectColorScheme` silently no-ops when `preferredLightColorTheme` points at a `vs-dark` theme.

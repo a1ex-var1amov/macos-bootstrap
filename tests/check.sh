@@ -242,6 +242,50 @@ else
     ok "no VS_EXT=qufiwefefwoyn.kanagawa"
 fi
 
+# Regression guard: a `config-file = ~/.config/ghostty/config` redirect written
+# into the macOS AppSupport config trips a known Ghostty bug
+# (ghostty-org/ghostty#11323) — Ghostty always auto-loads BOTH the XDG config
+# and the AppSupport config, so a redirect inside the latter makes it visit
+# the XDG file twice in one pass and error "cycle detected". Fix: mirror the
+# full rendered content instead (see ensure_ghostty_appsupport_shim).
+if grep -q "shim_line='config-file = ~/.config/ghostty/config'" "$REPO/lib/theme-lib.sh"; then
+    fail "lib/theme-lib.sh writes a config-file redirect into the Ghostty AppSupport config — this triggers Ghostty's 'cycle detected' error (ghostty-org/ghostty#11323); mirror full content instead"
+else
+    ok "no Ghostty AppSupport config-file redirect (avoids 'cycle detected' bug)"
+fi
+
+# Regression guard: ensure_ghostty_appsupport_shim must strip `config-file`
+# lines from the mirrored content before writing it to the AppSupport path.
+# Both XDG config and the AppSupport mirror are separately auto-loaded by
+# Ghostty as top-level defaults; if BOTH still carried their own `config-file
+# = ...config.local` include, config.local would be reached via two
+# independent parents in one session — the same diamond shape behind the
+# upstream cycle bug, just one level deeper (see prior check + CLAUDE.md).
+if grep -A10 "^ensure_ghostty_appsupport_shim()" "$REPO/lib/theme-lib.sh" | grep -q "grep -v '\^config-file'"; then
+    ok "ensure_ghostty_appsupport_shim strips config-file lines before mirroring"
+else
+    fail "ensure_ghostty_appsupport_shim no longer strips config-file lines from the AppSupport mirror — this can re-trigger Ghostty's 'cycle detected' bug via config.local being double-included"
+fi
+
+# Regression guard: gh-dash is a `gh` CLI extension (dlvhdr/gh-dash), not a
+# Homebrew formula/cask. `brew install gh-dash` / `brew "gh-dash"` always
+# fail with "No formulae or casks found for gh-dash".
+if grep -qE '^\s*for f in [^#]*\bgh-dash\b' "$REPO/install.sh"; then
+    fail "install.sh feeds gh-dash into a brew-install loop — it's a gh extension, not a formula (brew install gh-dash always fails)"
+else
+    ok "install.sh doesn't brew-install gh-dash"
+fi
+if grep -q '^brew "gh-dash"' "$REPO/Brewfile"; then
+    fail "Brewfile lists gh-dash as a brew formula — it's a gh extension (brew bundle would fail on it)"
+else
+    ok "Brewfile doesn't list gh-dash as a brew formula"
+fi
+if grep -q 'gh extension install dlvhdr/gh-dash' "$REPO/install.sh"; then
+    ok "install.sh installs gh-dash via gh extension install"
+else
+    fail "install.sh no longer installs gh-dash via 'gh extension install dlvhdr/gh-dash'"
+fi
+
 # ── 5. No personal / company-specific info ───────────────────────────────────
 section "No personal info"
 

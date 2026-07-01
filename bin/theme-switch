@@ -21,7 +21,7 @@
 #   ~/.config/terminal-color-theme         (COLOR_THEME=<dark>)
 #   ~/.config/terminal-theme-pair          (THEME_DARK=<> THEME_LIGHT=<>)
 #   ~/.config/ghostty/config               (theme = dark:X,light:Y)
-#   ~/Library/Application Support/…/config (Ghostty app-bundle include shim, if missing)
+#   ~/Library/Application Support/…/config (Ghostty app-bundle config, mirrored if stale)
 #   ~/Library/Application Support/Cursor/User/settings.json    (re-rendered)
 #   ~/Library/Application Support/Code/User/settings.json      (re-rendered)
 #   ~/.config/tmux-theme.conf              (active tmux palette)

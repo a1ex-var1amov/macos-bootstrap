@@ -309,24 +309,46 @@ render_ghostty_config() {
         "$THEME_LIB_REPO/configs/ghostty/config-base" > ~/.config/ghostty/config
 }
 
-# ensure_ghostty_appsupport_shim → writes a one-line include-shim to the
-# macOS app-bundle config path so Ghostty's auto-created template can't
-# shadow ~/.config/ghostty/config. Idempotent (skips if already present).
-# Returns 0 always; prints one status line via $ECHO_OK (default: echo).
+# ensure_ghostty_appsupport_shim → keeps the macOS Application Support config
+# path (~/Library/Application Support/com.mitchellh.ghostty/config) mirrored
+# with the real ~/.config/ghostty/config, so whichever one(s) Ghostty decides
+# to load, the settings — including the theme line — are always identical.
+# Idempotent: only writes when the content actually differs.
+# Returns 0 always; prints one status line via $ECHO_OK (default: echo) only
+# when it actually changed something.
+#
+# This used to write a one-line redirect (`config-file =
+# ~/.config/ghostty/config`) into the AppSupport file instead of duplicating
+# content. DON'T go back to that: Ghostty unconditionally auto-loads BOTH the
+# XDG config *and* the macOS AppSupport config on every launch (this isn't
+# conditional on one being missing — see ghostty-org/ghostty#11323). A
+# `config-file` directive inside the AppSupport file that points back at the
+# XDG file makes Ghostty visit that XDG file a second time in the same load
+# pass ("the default config file is always loaded" per a Ghostty maintainer),
+# which trips `cycle detected` even though it isn't a true cycle.
+#
+# We ALSO strip any `config-file = ...` line (e.g. the `?~/.config/ghostty/
+# config.local` include) out of the mirrored copy before writing it. Reason:
+# once both XDG config and the AppSupport mirror are separately auto-loaded
+# as top-level defaults, if BOTH still contained their own `config-file =
+# ...config.local` directive, config.local would be reached via two
+# independent parents in the same session — the exact diamond shape behind
+# the upstream bug. Only the XDG file (the one source of truth) should ever
+# include config.local; the AppSupport mirror carries every literal setting
+# except that one directive, so it can't cause a revisit of anything.
 ensure_ghostty_appsupport_shim() {
     local shim_path="$HOME/Library/Application Support/com.mitchellh.ghostty/config"
-    local shim_line='config-file = ~/.config/ghostty/config'
+    local xdg_path="$HOME/.config/ghostty/config"
     local echo_ok="${ECHO_OK:-echo}"
-    if [[ -f "$shim_path" ]]; then
-        if ! command grep -Fxq "$shim_line" "$shim_path"; then
-            printf '%s\n' "$shim_line" > "$shim_path"
-            "$echo_ok" "Ghostty AppSupport config now includes ~/.config/ghostty/config"
-        fi
-    else
-        mkdir -p "$(dirname "$shim_path")"
-        printf '%s\n' "$shim_line" > "$shim_path"
-        "$echo_ok" "Ghostty AppSupport config created (includes ~/.config/ghostty/config)"
+    [[ -f "$xdg_path" ]] || return 0
+    local rendered
+    rendered="$(grep -v '^config-file' "$xdg_path")"
+    if [[ -f "$shim_path" ]] && [[ "$rendered" == "$(cat "$shim_path")" ]]; then
+        return 0
     fi
+    mkdir -p "$(dirname "$shim_path")"
+    printf '%s\n' "$rendered" > "$shim_path"
+    "$echo_ok" "Ghostty AppSupport config synced with ~/.config/ghostty/config"
 }
 
 # render_vscode_settings <src-template> <dst-settings.json>
