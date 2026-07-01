@@ -26,6 +26,14 @@ bash -n "$REPO/tests/check.sh" \
     && ok "tests/check.sh" \
     || fail "tests/check.sh has syntax errors"
 
+bash -n "$REPO/bin/theme-switch" \
+    && ok "bin/theme-switch" \
+    || fail "bin/theme-switch has syntax errors"
+
+bash -n "$REPO/lib/theme-lib.sh" \
+    && ok "lib/theme-lib.sh" \
+    || fail "lib/theme-lib.sh has syntax errors"
+
 # ── 2. Zsh syntax ────────────────────────────────────────────────────────────
 section "Zsh syntax"
 
@@ -56,6 +64,13 @@ if command -v shellcheck &>/dev/null; then
     shellcheck -S warning -s bash -e SC2088 "$REPO/tests/check.sh" \
         && ok "tests/check.sh shellcheck" \
         || fail "tests/check.sh shellcheck warnings/errors"
+    # Theme wrapper + shared lib — strict.
+    shellcheck -S warning -s bash "$REPO/bin/theme-switch" \
+        && ok "bin/theme-switch shellcheck" \
+        || fail "bin/theme-switch shellcheck warnings/errors"
+    shellcheck -S warning -s bash "$REPO/lib/theme-lib.sh" \
+        && ok "lib/theme-lib.sh shellcheck" \
+        || fail "lib/theme-lib.sh shellcheck warnings/errors"
 else
     skip "shellcheck not installed — brew install shellcheck"
 fi
@@ -84,6 +99,8 @@ REQUIRED_FILES=(
     configs/vscode/settings-base.json
     cheatsheets/tmux-cheatsheet.txt
     cheatsheets/vim-cheatsheet.txt
+    bin/theme-switch
+    lib/theme-lib.sh
 )
 
 for f in "${REQUIRED_FILES[@]}"; do
@@ -98,6 +115,12 @@ for s in configs/tmux/scripts/*.sh; do
         && ok "$s (executable)" \
         || fail "$s is NOT executable — chmod +x"
 done
+
+# theme-switch must be executable — deployed as a symlink, so if the source
+# in-repo isn't +x, the deployed symlink won't be either.
+[[ -x "$REPO/bin/theme-switch" ]] \
+    && ok "bin/theme-switch (executable)" \
+    || fail "bin/theme-switch is NOT executable — chmod +x"
 
 # Every tmux theme file must define all the @color tokens used in tmux.conf.
 section "Tmux theme tokens"
@@ -142,28 +165,30 @@ for required in "~/.config/tmux-theme.conf" "~/.config/tmux-mouse.conf"; do
 done
 
 # Cursor + VS Code settings-base.json placeholders must each have a matching
-# sed `-e "s|__NAME__|...|"` line in install.sh. Catches the "added a new
+# sed `-e "s|__NAME__|...|"` line in the tree. Catches the "added a new
 # __PLACEHOLDER__ but forgot to substitute it" class of bug, which would ship
-# a broken JSON file to users.
+# a broken JSON file to users. The substitution has moved from install.sh into
+# `render_vscode_settings` in lib/theme-lib.sh, so we grep both.
 section "Cursor/VSCode settings placeholders"
 
 for tmpl in configs/cursor/settings-base.json configs/vscode/settings-base.json; do
     while IFS= read -r placeholder; do
-        if grep -qF "s|$placeholder|" "$REPO/install.sh"; then
+        if grep -qF "s|$placeholder|" "$REPO/install.sh" \
+        || grep -qF "s|$placeholder|" "$REPO/lib/theme-lib.sh"; then
             ok "$tmpl uses $placeholder (substituted)"
         else
-            fail "$tmpl uses $placeholder but install.sh has no sed substitution"
+            fail "$tmpl uses $placeholder but no sed substitution found (install.sh + lib/theme-lib.sh)"
         fi
     done < <(grep -oE '__[A-Z_]+__' "$REPO/$tmpl" | sort -u)
 done
 
-# Each theme name picked by install.sh (THEME_DARK/THEME_LIGHT in the pair case
-# statement) must have matching theme files in ghostty/tmux/nvim. Catches "added
-# a new pair but forgot one of the theme files" the moment install.sh references
-# something we don't ship.
-section "Theme files referenced by install.sh"
+# Each theme name picked by the theme resolver (THEME_DARK/THEME_LIGHT in
+# `theme_choice_to_pair`) must have matching theme files in ghostty/tmux/nvim.
+# Catches "added a new pair but forgot one of the theme files" the moment the
+# resolver references something we don't ship. Now lives in lib/theme-lib.sh.
+section "Theme files referenced by theme_choice_to_pair"
 
-THEME_NAMES=$(grep -oE 'THEME_(DARK|LIGHT)=[a-z-]+' "$REPO/install.sh" \
+THEME_NAMES=$(grep -oE 'THEME_(DARK|LIGHT)=[a-z-]+' "$REPO/lib/theme-lib.sh" \
               | sed -E 's|THEME_(DARK\|LIGHT)=||' \
               | sort -u)
 for tn in $THEME_NAMES; do
@@ -175,9 +200,47 @@ for tn in $THEME_NAMES; do
     if (( ${#miss[@]} == 0 )); then
         ok "theme files present for: $tn"
     else
-        fail "theme '$tn' missing: ${miss[*]} (referenced from install.sh)"
+        fail "theme '$tn' missing: ${miss[*]} (referenced from lib/theme-lib.sh)"
     fi
 done
+
+# Sanity check: THEME_LIB_MAX_CHOICE must match the highest numbered case in
+# theme_choice_to_pair. Catches "bumped the case block but forgot the constant".
+section "Theme choice bounds"
+
+MAX_IN_LIB=$(grep -E '^THEME_LIB_MAX_CHOICE=' "$REPO/lib/theme-lib.sh" \
+             | head -1 | sed 's/^THEME_LIB_MAX_CHOICE=//' | tr -d '"')
+# Extract the highest N from `    N) THEME_DARK=... ; THEME_LIGHT=...` lines
+# in the theme_choice_to_pair function. The default (*) fallback is skipped.
+HIGHEST_CASE=$(awk '
+    /^theme_choice_to_pair\(\)/ { in_fn = 1 }
+    in_fn && /^\}/               { in_fn = 0 }
+    in_fn && /^[[:space:]]+[0-9]+\)/ {
+        gsub(/[^0-9]/, "", $1)
+        if ($1 + 0 > max) max = $1 + 0
+    }
+    END { print max }
+' "$REPO/lib/theme-lib.sh")
+if [[ -n "$MAX_IN_LIB" && -n "$HIGHEST_CASE" && "$MAX_IN_LIB" == "$HIGHEST_CASE" ]]; then
+    ok "THEME_LIB_MAX_CHOICE=$MAX_IN_LIB matches highest case in theme_choice_to_pair"
+else
+    fail "THEME_LIB_MAX_CHOICE=$MAX_IN_LIB but highest case is $HIGHEST_CASE — bump one to match"
+fi
+
+# Regression guard: qufiwefefwoyn.kanagawa looked like the "obvious" VS Code
+# port of kanagawa.nvim (it's what the neovim plugin's own README points to),
+# but it's dark-only AND unavailable through Cursor's Open VSX-backed
+# marketplace (`cursor --install-extension` reports "not found"). The pair
+# silently fell back to whatever theme was already active — exactly the "many
+# pairs aren't working" bug this caught. metaphore.kanagawa-vscode-color-theme
+# is the correct id (ships Wave/Dragon/Lotus, installs fine on both editors).
+section "Known-bad extension ids"
+
+if grep -q 'VS_EXT="qufiwefefwoyn.kanagawa"' "$REPO/lib/theme-lib.sh"; then
+    fail "lib/theme-lib.sh sets VS_EXT to qufiwefefwoyn.kanagawa (unavailable in Cursor's marketplace — use metaphore.kanagawa-vscode-color-theme)"
+else
+    ok "no VS_EXT=qufiwefefwoyn.kanagawa"
+fi
 
 # ── 5. No personal / company-specific info ───────────────────────────────────
 section "No personal info"
@@ -258,7 +321,14 @@ if [[ "${1:-}" != "--repo-only" ]]; then
     local cmd="$1" pkg="$2"
     if command -v "$cmd" &>/dev/null; then
       local ver
-      ver=$("$cmd" --version 2>&1 | head -1 | sed 's/[^0-9.]//g' | grep -oE '[0-9]+\.[0-9]+' | head -1)
+      # Search the whole --version banner (not just line 1): tools like eza
+      # print a multi-line banner with the version number on line 2, and
+      # `head -1` before the grep used to silently find nothing there. With
+      # `set -e` + `pipefail` at the top of this script, that empty match
+      # made the *entire* pipeline fail, which killed the whole test run
+      # partway through with no error message. `|| true` guards the case
+      # where a tool's output has no X.Y-shaped version string at all.
+      ver=$("$cmd" --version 2>&1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1 || true)
       ok "$cmd${ver:+ ($ver)}"
     else
       fail "$cmd not found — brew install $pkg"
@@ -294,6 +364,56 @@ if [[ "${1:-}" != "--repo-only" ]]; then
       && ok "${f/#$HOME/~}" \
       || fail "${f/#$HOME/~} is MISSING — run ./install.sh"
   done
+
+  # Every VS_EXT id in vscode_theme_meta must actually be installed on this
+  # machine, IF cursor/code are present. This is what would have caught the
+  # Kanagawa bug directly: rendering settings.json with a theme name whose
+  # extension was never installed doesn't error anywhere — Cursor/VS Code
+  # just silently keep showing whatever theme was already active, which
+  # looks exactly like "the switch didn't work". Skipped entirely (like the
+  # tool checks above) when neither editor CLI is present.
+  section "Theme extensions actually installed"
+
+  VSCODE_EXT_IDS=$(grep -oE 'VS_EXT="[a-zA-Z0-9._-]+"' "$REPO/lib/theme-lib.sh" \
+                   | sed -E 's/^VS_EXT="//; s/"$//' | sort -u)
+
+  check_ext_installed() {
+    local editor_cmd="$1" ext="$2" installed="$3"
+    if printf '%s\n' "$installed" | grep -qiFx "$ext"; then
+      ok "$editor_cmd: $ext installed"
+    else
+      fail "$editor_cmd: $ext NOT installed — run: $editor_cmd --install-extension $ext"
+    fi
+  }
+
+  for editor_cmd in cursor code; do
+    if command -v "$editor_cmd" &>/dev/null; then
+      installed_list="$("$editor_cmd" --list-extensions 2>/dev/null || true)"
+      for ext in $VSCODE_EXT_IDS; do
+        [[ -z "$ext" ]] && continue
+        check_ext_installed "$editor_cmd" "$ext" "$installed_list"
+      done
+    else
+      skip "$editor_cmd theme extensions (CLI not found)"
+    fi
+  done
+
+  # theme-switch is deployed as a symlink into ~/.local/bin. Verify it (a) exists
+  # and (b) points at the repo we're running from — a stale symlink to a moved
+  # repo path would silently fail.
+  TS_LINK="$HOME/.local/bin/theme-switch"
+  if [[ -L "$TS_LINK" ]]; then
+    TS_TARGET="$(readlink "$TS_LINK")"
+    if [[ -x "$TS_TARGET" ]]; then
+        ok "~/.local/bin/theme-switch → $TS_TARGET"
+    else
+        fail "~/.local/bin/theme-switch → $TS_TARGET (target not executable/missing)"
+    fi
+  elif [[ -x "$TS_LINK" ]]; then
+    ok "~/.local/bin/theme-switch (regular file, executable)"
+  else
+    fail "~/.local/bin/theme-switch missing — run ./install.sh"
+  fi
 fi
 
 # ── Summary ───────────────────────────────────────────────────────────────────

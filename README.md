@@ -260,6 +260,21 @@ Toggle macOS appearance (System Settings -> Appearance, or via Raycast / a Short
 
 For unattended installs (e.g. provisioning a new mac), `./install.sh --yes --theme=gruvbox` (or `--theme=11`) picks the pair non-interactively. The flag accepts either the menu number (1–15) or any name in the key list above. See `./install.sh --help` for the full mapping.
 
+#### Swap the theme pair without re-installing
+
+The installer drops a `theme-switch` symlink into `~/.local/bin`. It only touches the theme-related files (Ghostty, tmux, nvim, Cursor / VS Code settings) — no brew, no extension installs, no prompts. Typical runtime is under a second.
+
+```bash
+theme-switch                     # interactive menu (with current pair shown)
+theme-switch 11                  # jump straight to Gruvbox
+theme-switch gruvbox             # same, by name
+theme-switch --list              # print all pairs and exit
+theme-switch --current           # print the currently active pair
+theme-switch --help
+```
+
+Cursor / VS Code need a "Developer: Reload Window" (`Cmd+Shift+P`) to pick up the new theme; every other layer (Ghostty, tmux, nvim, bat, delta) live-reloads. The shared theme tables live in `lib/theme-lib.sh` — both `install.sh` and `theme-switch` source it, so adding a new pair is a single-file edit.
+
 ### Tmux mouse mode (chosen at install time)
 
 The installer asks how much of the mouse you want tmux to intercept. The choice is saved to `~/.config/terminal-tmux-mouse` and preserved across `--update` runs.

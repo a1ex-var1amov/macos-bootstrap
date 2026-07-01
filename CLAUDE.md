@@ -45,22 +45,27 @@ Pairs-only menu (15 pairs) — every pair auto-switches with macOS appearance in
 | 14 | GitHub                     | Dark      | Light      |
 | 15 | Nord                       | Nord      | Nord Light |
 
-Single-theme mode no longer exists — the menu now produces `THEME_DARK` + `THEME_LIGHT` for every choice, and `VSCODE_AUTO_DETECT` is always `true`. The `--theme=<n|key>` install.sh flag lets callers pre-select a pair non-interactively. It accepts either the menu number (1–15) or a name (`catppuccin`, `gruvbox`, etc. — full list in `--help`). The resolver is the bash helper `_theme_key_to_choice`; each menu number is the first case-branch label, so adding a new pair means adding the number+key together and bumping the `1-15` range message + the `_vscode_theme_meta` lookup.
+Single-theme mode no longer exists — the menu now produces `THEME_DARK` + `THEME_LIGHT` for every choice, and `VSCODE_AUTO_DETECT` is always `true`. The `--theme=<n|key>` install.sh flag lets callers pre-select a pair non-interactively. It accepts either the menu number (1–15) or a name (`catppuccin`, `gruvbox`, etc. — full list in `--help`).
+
+**Single source of truth for theme mappings**: `lib/theme-lib.sh`. All the pair/key/label/vscode-metadata tables live there and are consumed by both `install.sh` (which sources it at the top) and `bin/theme-switch` (the fast standalone changer). Adding a new pair means editing `lib/theme-lib.sh` (bump `theme_choice_to_pair`, `theme_key_to_choice`, `theme_choice_label`, `vscode_theme_meta`, and `THEME_LIB_MAX_CHOICE`) plus dropping three theme files (`configs/{ghostty,tmux,nvim}/themes/`). `tests/check.sh` validates the constant matches the highest case number in `theme_choice_to_pair`.
 
 Theme files live in `configs/{ghostty,tmux,nvim}/themes/`. The installer (section 10, choices 1–15) asks which scheme to use and writes:
-- `~/.config/ghostty/themes/` + `theme = <name>` line in `~/.config/ghostty/config`
+- `~/.config/ghostty/themes/` + `theme = dark:X,light:Y` line in `~/.config/ghostty/config`
 - `~/.config/tmux-theme.conf` (sourced at end of `~/.tmux.conf`)
 - `~/.config/nvim/lua/active_theme.lua` + `~/.config/nvim/lua/theme_base.lua`
-- `~/.config/terminal-color-theme` (persists choice across reinstalls)
+- `~/.config/terminal-color-theme` and `~/.config/terminal-theme-pair` (persist choice across reinstalls)
 
-To switch theme without re-running the full installer:
+**Switching without reinstalling — `theme-switch`**: `bin/theme-switch` is a standalone script that sources `lib/theme-lib.sh` and only touches theme-related files. `install.sh` symlinks it into `~/.local/bin/theme-switch` (which is already on PATH via `zshrc`). Typical runtime <1s. Usage:
 ```bash
-# Ghostty: edit ~/.config/ghostty/config → theme = tokyo-night
-# Tmux:
-cp configs/tmux/themes/tokyo-night.conf ~/.config/tmux-theme.conf && tmux source-file ~/.tmux.conf
-# Neovim:
-cp configs/nvim/themes/tokyo-night.lua ~/.config/nvim/lua/active_theme.lua
+theme-switch                  # interactive menu (shows current pair)
+theme-switch 11               # non-interactive; menu-number or key
+theme-switch gruvbox          # same, by name (legacy single-theme keys too)
+theme-switch --list           # print all pairs
+theme-switch --current        # print the active pair
 ```
+Skip-work fast path: if the requested pair equals the current one, `theme-switch` exits immediately without rewriting any file. Cursor / VS Code still need a "Developer: Reload Window" to pick up the new theme; every other layer (Ghostty, tmux, nvim, bat, delta) live-reloads.
+
+**Extension installs happen on every real switch, not just the first `install.sh` run**: rendering `settings.json` with a theme name whose extension was never installed doesn't error anywhere — Cursor/VS Code just silently keep showing whatever theme was already active, which looks exactly like "the switch didn't work" (this was a real bug: 4 of the 15 pairs appeared broken because their extensions were only ever installed for whichever pair `install.sh` happened to be run with). Both `install.sh` and `theme-switch` now call `ensure_vscode_extensions` (in `lib/theme-lib.sh`) for the pair's dark/light `VS_EXT` ids, which checks `--list-extensions` first (fast, offline) so already-seen pairs stay instant — only a genuinely new pair touches the network. Every `cursor`/`code` CLI call inside it is wrapped in `_run_with_timeout` (a portable polling-based timeout, since macOS ships neither `timeout` nor bash 4.3's `wait -n`) so a hung editor CLI can never wedge the whole script.
 
 ## Config File → Install Target Mapping
 
@@ -75,12 +80,14 @@ cp configs/nvim/themes/tokyo-night.lua ~/.config/nvim/lua/active_theme.lua
 | `configs/tmux/tmux.conf` | `~/.tmux.conf` |
 | `configs/git/gitconfig` | `~/.config/git/gitconfig` (included via `~/.gitconfig`) |
 | `configs/git/gitignore_global` | `~/.gitignore_global` |
-| `configs/cursor/settings-base.json` | `~/Library/Application Support/Cursor/User/settings.json` (rendered through `_render_vscode_settings`) |
-| `configs/vscode/settings-base.json` | `~/Library/Application Support/Code/User/settings.json` (rendered through `_render_vscode_settings`) |
-| `configs/ghostty/config-base` | `~/.config/ghostty/config` (theme line substituted by `sed`); plus a one-line `config-file = ~/.config/ghostty/config` shim written to `~/Library/Application Support/com.mitchellh.ghostty/config` so the macOS app-bundle path can't shadow our XDG config |
+| `configs/cursor/settings-base.json` | `~/Library/Application Support/Cursor/User/settings.json` (rendered through `render_vscode_settings` in `lib/theme-lib.sh`) |
+| `configs/vscode/settings-base.json` | `~/Library/Application Support/Code/User/settings.json` (rendered through `render_vscode_settings` in `lib/theme-lib.sh`) |
+| `configs/ghostty/config-base` | `~/.config/ghostty/config` (theme line substituted by `render_ghostty_config` in `lib/theme-lib.sh`); plus a one-line `config-file = ~/.config/ghostty/config` shim written to `~/Library/Application Support/com.mitchellh.ghostty/config` so the macOS app-bundle path can't shadow our XDG config |
 | `configs/ssh/config-base` | `~/.ssh/config` (only if absent) |
 | `configs/tmux/extras/mouse-{on,off}.conf` | `~/.config/tmux/extras/` (one of them copied to `~/.config/tmux-mouse.conf`) |
 | `cheatsheets/*.txt` | `~/.config/*.txt` |
+| `bin/theme-switch` | Symlinked into `~/.local/bin/theme-switch` for fast standalone theme swaps (no re-install) |
+| `lib/theme-lib.sh` | Not installed — sourced in-repo by both `install.sh` and `bin/theme-switch` at runtime (single source of truth for theme tables) |
 
 ## Architecture Notes
 
@@ -197,6 +204,8 @@ Two theme pairs need a special-case override on the IDE side because their exten
 - **Nord** (option 15, `THEME_LIGHT=nord-light`) — the official `arcticicestudio.nord-visual-studio-code` extension only ships the Nord (dark) theme. `_vscode_theme_meta nord-light` therefore maps to Cursor's built-in **"Default Light Modern"** (always available, no extension required). Tmux/nvim/Ghostty have a real Snow-Storm light palette under `nord-light`.
 
 When adding a new theme pair, verify the light side has `uiTheme: vs` or `hc-light` in its extension's `package.json` — otherwise apply the same override pattern (substitute a real light theme in `_vscode_theme_meta` for the light key, OR add an `if [[ "$THEME_LIGHT" == "..." ]]` block right after `_vscode_theme_meta "$THEME_LIGHT"`).
+
+**Verify the `VS_EXT` id is actually installable in Cursor before shipping it.** Cursor's extension marketplace is Open VSX-backed, not the full Microsoft VS Code Marketplace — an id that's correct for stock VS Code can still 404 in Cursor (`cursor --install-extension <id>` prints `Extension '<id>' not found`). This bit Kanagawa: `qufiwefefwoyn.kanagawa` is what kanagawa.nvim's own docs point to, and it installs fine in VS Code, but it doesn't exist in Cursor's registry at all *and* only ships a single dark theme (no Lotus/light variant) even where it does exist. `metaphore.kanagawa-vscode-color-theme` is the correct id — it ships all three flavours (Wave/Dragon/Lotus) and installs on both editors. Sanity-check any new `VS_EXT` with `cursor --install-extension <id>` (and `code --install-extension <id>` if you use stock VS Code too) before wiring it into `vscode_theme_meta`; `tests/check.sh`'s "Theme extensions actually installed" section will also flag it once it's rendered somewhere and the extension is missing locally.
 
 ### Optional tmux session persistence
 A commented TPM + tmux-resurrect + tmux-continuum block lives near the bottom of `tmux.conf` (after the theme source-file). Users opt in by uncommenting and running the TPM clone one-liner from the README. Default ships disabled to keep tmux's startup zero-dependency.

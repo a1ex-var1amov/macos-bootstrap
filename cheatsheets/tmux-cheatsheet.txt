@@ -152,4 +152,11 @@ MISC
   Theme tokens:   ~/.config/tmux-theme.conf
   Mouse mode:     ~/.config/tmux-mouse.conf
   Helper scripts: ~/.config/tmux/scripts/
+
+  Change theme pair without re-installing:
+    theme-switch                  Interactive menu (shows current pair)
+    theme-switch 11               Non-interactive; number (1-15) or key
+    theme-switch gruvbox          Same, by name
+    theme-switch --list           List all pairs
+    theme-switch --current        Print the active pair
 ================================================================================

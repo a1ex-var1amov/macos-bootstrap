@@ -37,6 +37,11 @@ NC='\033[0m'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# ── Shared theme helpers (single source of truth for install.sh + theme-switch)
+export THEME_LIB_REPO="$SCRIPT_DIR"
+# shellcheck source=lib/theme-lib.sh
+source "$SCRIPT_DIR/lib/theme-lib.sh"
+
 # ── Flags ────────────────────────────────────────────────────────────────────
 INTERACTIVE=1
 UPDATE_ONLY=0
@@ -558,206 +563,40 @@ echo "  14) GitHub                — Dark      ↔ Light           (what github
 echo "  15) Nord                  — Nord      ↔ Nord Light      (cool arctic blues; IDE light side: Default Light Modern)"
 echo ""
 
-# Map a previously-saved COLOR_THEME (which may still be an old single-theme
-# name on machines that were installed before the pairs-only refactor) back
-# to its closest current pair. Used in --update mode and as a fall-through
-# inside the case statement below.
-_theme_key_to_choice() {
-    case "$1" in
-        1|catppuccin|catppuccin-mocha|catppuccin-latte)              echo 1  ;;
-        2|catppuccin-macchiato)                                      echo 2  ;;
-        3|catppuccin-frappe)                                         echo 3  ;;
-        4|tokyo-night|tokyo-night-day)                               echo 4  ;;
-        5|tokyo-night-storm)                                         echo 5  ;;
-        6|tokyo-night-moon)                                          echo 6  ;;
-        7|rose-pine|rose-pine-dawn)                                  echo 7  ;;
-        8|rose-pine-moon)                                            echo 8  ;;
-        9|dracula|dracula-alucard)                                   echo 9  ;;
-        10|solarized|solarized-dark|solarized-light)                 echo 10 ;;
-        11|gruvbox|gruvbox-dark|gruvbox-light)                       echo 11 ;;
-        12|everforest|everforest-dark|everforest-light)              echo 12 ;;
-        13|kanagawa|kanagawa-wave|kanagawa-lotus)                    echo 13 ;;
-        14|github|github-dark|github-light)                          echo 14 ;;
-        15|nord|nord-light)                                          echo 15 ;;
-        *)                                                           echo 1  ;;
-    esac
-}
-
 # Precedence: --theme=<key> flag wins, then --update preserves the last
 # choice, then interactive prompt, then default (Catppuccin pair).
+# The theme_key_to_choice / theme_choice_to_pair / save_theme_choice helpers
+# live in lib/theme-lib.sh and are shared with bin/theme-switch.
 if [[ -n "$THEME_FLAG" ]]; then
-    COLOR_CHOICE="$(_theme_key_to_choice "$THEME_FLAG")"
+    COLOR_CHOICE="$(theme_key_to_choice "$THEME_FLAG")"
     print_status "Theme pre-selected via --theme=$THEME_FLAG (menu choice $COLOR_CHOICE)"
 elif (( UPDATE_ONLY )) && [[ -n "$COLOR_THEME" ]]; then
-    COLOR_CHOICE="$(_theme_key_to_choice "$COLOR_THEME")"
+    COLOR_CHOICE="$(theme_key_to_choice "$COLOR_THEME")"
     print_status "Keeping color scheme: $COLOR_THEME (menu choice $COLOR_CHOICE)"
 else
-    COLOR_CHOICE="$(ask_value "Pick [1-15] (default 1): " "1")"
+    COLOR_CHOICE="$(ask_value "Pick [1-$THEME_LIB_MAX_CHOICE] (default 1): " "1")"
 fi
 
-case "$COLOR_CHOICE" in
-   1) THEME_DARK=catppuccin-mocha     ; THEME_LIGHT=catppuccin-latte    ;;
-   2) THEME_DARK=catppuccin-macchiato ; THEME_LIGHT=catppuccin-latte    ;;
-   3) THEME_DARK=catppuccin-frappe    ; THEME_LIGHT=catppuccin-latte    ;;
-   4) THEME_DARK=tokyo-night          ; THEME_LIGHT=tokyo-night-day     ;;
-   5) THEME_DARK=tokyo-night-storm    ; THEME_LIGHT=tokyo-night-day     ;;
-   6) THEME_DARK=tokyo-night-moon     ; THEME_LIGHT=tokyo-night-day     ;;
-   7) THEME_DARK=rose-pine            ; THEME_LIGHT=rose-pine-dawn      ;;
-   8) THEME_DARK=rose-pine-moon       ; THEME_LIGHT=rose-pine-dawn      ;;
-   9) THEME_DARK=dracula              ; THEME_LIGHT=dracula-alucard     ;;
-  10) THEME_DARK=solarized-dark       ; THEME_LIGHT=solarized-light     ;;
-  11) THEME_DARK=gruvbox-dark         ; THEME_LIGHT=gruvbox-light       ;;
-  12) THEME_DARK=everforest-dark      ; THEME_LIGHT=everforest-light    ;;
-  13) THEME_DARK=kanagawa-wave        ; THEME_LIGHT=kanagawa-lotus      ;;
-  14) THEME_DARK=github-dark          ; THEME_LIGHT=github-light        ;;
-  15) THEME_DARK=nord                 ; THEME_LIGHT=nord-light          ;;
-   *) THEME_DARK=catppuccin-mocha     ; THEME_LIGHT=catppuccin-latte    ;;
-esac
+# Sets $THEME_DARK / $THEME_LIGHT as side-effects.
+theme_choice_to_pair "$COLOR_CHOICE" >/dev/null
 
 COLOR_THEME="$THEME_DARK"
 GHOSTTY_THEME="dark:$THEME_DARK,light:$THEME_LIGHT"
 
-echo "export COLOR_THEME=$COLOR_THEME" > ~/.config/terminal-color-theme
-printf 'export THEME_DARK=%s\nexport THEME_LIGHT=%s\n' \
-    "$THEME_DARK" "$THEME_LIGHT" > ~/.config/terminal-theme-pair
+save_theme_choice "$THEME_DARK" "$THEME_LIGHT"
 print_success "Color pair: $THEME_DARK ↔ $THEME_LIGHT (Ghostty: $GHOSTTY_THEME)"
 
-# Look up VS Code / Cursor theme metadata for a given color-theme key.
-# Sets VS_NAME, VS_ICON, VS_BORDER, VS_EXT, VS_SLACK as side-effects (avoiding
-# associative arrays since macOS still ships bash 3.2 by default).
-_vscode_theme_meta() {
-    case "$1" in
-      catppuccin-frappe)
-        VS_NAME="Catppuccin Frappé"; VS_ICON="catppuccin-frappe"; VS_EXT=""
-        VS_BORDER="#51576d"
-        VS_SLACK="#303446,#292c3c,#8caaee,#303446,#414559,#c6d0f5,#a6d189,#e78284" ;;
-      catppuccin-macchiato)
-        VS_NAME="Catppuccin Macchiato"; VS_ICON="catppuccin-macchiato"; VS_EXT=""
-        VS_BORDER="#5b6078"
-        VS_SLACK="#24273a,#1e2030,#8aadf4,#24273a,#363a4f,#cad3f5,#a6da95,#ed8796" ;;
-      catppuccin-mocha)
-        VS_NAME="Catppuccin Mocha"; VS_ICON="catppuccin-mocha"; VS_EXT=""
-        VS_BORDER="#585b70"
-        VS_SLACK="#1e1e2e,#181825,#89b4fa,#1e1e2e,#313244,#cdd6f4,#a6e3a1,#f38ba8" ;;
-      catppuccin-latte)
-        VS_NAME="Catppuccin Latte"; VS_ICON="catppuccin-latte"; VS_EXT=""
-        VS_BORDER="#9ca0b0"
-        VS_SLACK="#eff1f5,#e6e9ef,#1e66f5,#eff1f5,#ccd0da,#4c4f69,#40a02b,#d20f39" ;;
-      tokyo-night)
-        VS_NAME="Tokyo Night"; VS_ICON="catppuccin-mocha"; VS_EXT="enkia.tokyo-night"
-        VS_BORDER="#414868"
-        VS_SLACK="#1a1b26,#16161e,#7aa2f7,#c0caf5,#24283b,#c0caf5,#9ece6a,#f7768e" ;;
-      tokyo-night-storm)
-        VS_NAME="Tokyo Night Storm"; VS_ICON="catppuccin-mocha"; VS_EXT="enkia.tokyo-night"
-        VS_BORDER="#3b4261"
-        VS_SLACK="#24283b,#1f2335,#7aa2f7,#c0caf5,#292e42,#c0caf5,#9ece6a,#f7768e" ;;
-      tokyo-night-moon)
-        VS_NAME="Tokyo Night"; VS_ICON="catppuccin-mocha"; VS_EXT="enkia.tokyo-night"
-        VS_BORDER="#444a73"
-        VS_SLACK="#222436,#1e2030,#82aaff,#c8d3f5,#2d3f51,#c8d3f5,#c3e88d,#ff757f" ;;
-      tokyo-night-day)
-        VS_NAME="Tokyo Night Light"; VS_ICON="catppuccin-latte"; VS_EXT="enkia.tokyo-night"
-        VS_BORDER="#a1a6c5"
-        VS_SLACK="#e1e2e7,#d5d6db,#2e7de9,#e1e2e7,#b6bfe2,#3760bf,#587539,#f52a65" ;;
-      rose-pine)
-        VS_NAME="Rosé Pine"; VS_ICON="catppuccin-mocha"; VS_EXT="mvllow.rose-pine"
-        VS_BORDER="#403d52"
-        VS_SLACK="#191724,#16141f,#9ccfd8,#191724,#26233a,#e0def4,#31748f,#eb6f92" ;;
-      rose-pine-moon)
-        VS_NAME="Rosé Pine Moon"; VS_ICON="catppuccin-mocha"; VS_EXT="mvllow.rose-pine"
-        VS_BORDER="#44415a"
-        VS_SLACK="#232136,#1f1d2e,#9ccfd8,#232136,#393552,#e0def4,#3e8fb0,#eb6f92" ;;
-      rose-pine-dawn)
-        VS_NAME="Rosé Pine Dawn"; VS_ICON="catppuccin-latte"; VS_EXT="mvllow.rose-pine"
-        VS_BORDER="#dfdad9"
-        VS_SLACK="#faf4ed,#fffaf3,#286983,#faf4ed,#dfdad9,#575279,#56949f,#b4637a" ;;
-      dracula)
-        VS_NAME="Dracula Theme"; VS_ICON="catppuccin-mocha"; VS_EXT="dracula-theme.theme-dracula"
-        VS_BORDER="#44475a"
-        VS_SLACK="#282a36,#21222c,#bd93f9,#282a36,#44475a,#f8f8f2,#50fa7b,#ff5555" ;;
-      dracula-alucard)
-        VS_NAME="Dracula Theme Soft"; VS_ICON="catppuccin-latte"; VS_EXT="dracula-theme.theme-dracula"
-        VS_BORDER="#cfcfde"
-        VS_SLACK="#fffbeb,#f0ead8,#644ac9,#fffbeb,#cfcfde,#1f1f1f,#14710a,#cb3a2a" ;;
-      solarized-dark)
-        VS_NAME="Solarized Dark"; VS_ICON="catppuccin-mocha"; VS_EXT=""
-        VS_BORDER="#073642"
-        VS_SLACK="#002b36,#073642,#268bd2,#002b36,#586e75,#93a1a1,#859900,#dc322f" ;;
-      solarized-light)
-        VS_NAME="Solarized Light"; VS_ICON="catppuccin-latte"; VS_EXT=""
-        VS_BORDER="#eee8d5"
-        VS_SLACK="#fdf6e3,#eee8d5,#268bd2,#fdf6e3,#93a1a1,#586e75,#859900,#dc322f" ;;
-      gruvbox-dark)
-        VS_NAME="Gruvbox Dark Medium"; VS_ICON="catppuccin-mocha"; VS_EXT="jdinhlife.gruvbox"
-        VS_BORDER="#3c3836"
-        VS_SLACK="#282828,#3c3836,#fabd2f,#282828,#504945,#ebdbb2,#b8bb26,#fb4934" ;;
-      gruvbox-light)
-        VS_NAME="Gruvbox Light Medium"; VS_ICON="catppuccin-latte"; VS_EXT="jdinhlife.gruvbox"
-        VS_BORDER="#ebdbb2"
-        VS_SLACK="#fbf1c7,#ebdbb2,#b57614,#fbf1c7,#d5c4a1,#3c3836,#79740e,#9d0006" ;;
-      everforest-dark)
-        VS_NAME="Everforest Dark"; VS_ICON="catppuccin-mocha"; VS_EXT="sainnhe.everforest"
-        VS_BORDER="#343f44"
-        VS_SLACK="#2d353b,#343f44,#a7c080,#2d353b,#475258,#d3c6aa,#a7c080,#e67e80" ;;
-      everforest-light)
-        VS_NAME="Everforest Light"; VS_ICON="catppuccin-latte"; VS_EXT="sainnhe.everforest"
-        VS_BORDER="#f4f0d9"
-        VS_SLACK="#fdf6e3,#f4f0d9,#8da101,#fdf6e3,#e0dcc7,#5c6a72,#8da101,#f85552" ;;
-      kanagawa-wave)
-        VS_NAME="Kanagawa"; VS_ICON="catppuccin-mocha"; VS_EXT="qufiwefefwoyn.kanagawa"
-        VS_BORDER="#2a2a37"
-        VS_SLACK="#1f1f28,#2a2a37,#7e9cd8,#1f1f28,#363646,#dcd7ba,#98bb6c,#c34043" ;;
-      kanagawa-lotus)
-        VS_NAME="Kanagawa Lotus"; VS_ICON="catppuccin-latte"; VS_EXT="qufiwefefwoyn.kanagawa"
-        VS_BORDER="#e5dec7"
-        VS_SLACK="#f2ecbc,#e5dec7,#4d699b,#f2ecbc,#d0c8a4,#545464,#6f894e,#c84053" ;;
-      github-dark)
-        VS_NAME="GitHub Dark Default"; VS_ICON="catppuccin-mocha"; VS_EXT="GitHub.github-vscode-theme"
-        VS_BORDER="#30363d"
-        VS_SLACK="#0d1117,#161b22,#58a6ff,#0d1117,#30363d,#c9d1d9,#3fb950,#ff7b72" ;;
-      github-light)
-        VS_NAME="GitHub Light Default"; VS_ICON="catppuccin-latte"; VS_EXT="GitHub.github-vscode-theme"
-        VS_BORDER="#d0d7de"
-        VS_SLACK="#ffffff,#f6f8fa,#0969da,#ffffff,#d0d7de,#24292f,#1a7f37,#cf222e" ;;
-      nord)
-        VS_NAME="Nord"; VS_ICON="catppuccin-mocha"; VS_EXT="arcticicestudio.nord-visual-studio-code"
-        VS_BORDER="#3b4252"
-        VS_SLACK="#2e3440,#3b4252,#88c0d0,#2e3440,#4c566a,#d8dee9,#a3be8c,#bf616a" ;;
-      nord-light)
-        # The Nord VS Code extension only ships a vs-dark theme. For the light
-        # side of the Nord pair we fall back to Cursor's built-in "Default
-        # Light Modern" so autoDetectColorScheme can swap on macOS appearance.
-        VS_NAME="Default Light Modern"; VS_ICON="catppuccin-latte"; VS_EXT=""
-        VS_BORDER="#e5e9f0"
-        VS_SLACK="#eceff4,#e5e9f0,#5e81ac,#eceff4,#d8dee9,#2e3440,#a3be8c,#bf616a" ;;
-      *)
-        VS_NAME=""; VS_ICON=""; VS_EXT=""; VS_BORDER=""; VS_SLACK="" ;;
-    esac
-}
+# Populate VSCODE_* + SLACK_THEME globals from the chosen pair. All the theme
+# metadata tables (VS_NAME / VS_ICON / VS_EXT / VS_BORDER / VS_SLACK per key)
+# live in lib/theme-lib.sh — see `vscode_theme_meta` there. The call below also
+# applies the dracula-alucard → rose-pine-dawn IDE-light-side substitution
+# (necessary because "Dracula Theme Soft" is still uiTheme=vs-dark, so
+# autoDetectColorScheme silently no-ops with it as the light theme).
+compute_vscode_pair_metadata "$THEME_DARK" "$THEME_LIGHT"
 
-# Primary theme metadata — drives the single-theme placeholders.
-_vscode_theme_meta "$COLOR_THEME"
-VSCODE_COLOR_THEME="$VS_NAME"
-VSCODE_ICON_THEME="$VS_ICON"
-VSCODE_THEME_EXT="$VS_EXT"
-VSCODE_BORDER_COLOR="$VS_BORDER"
-SLACK_THEME="$VS_SLACK"
-
-# Cursor / VS Code auto-detect macOS dark↔light mode.
-# Pairs-only menu means we always have $THEME_DARK / $THEME_LIGHT set, so
-# autoDetectColorScheme is always on and preferred{Dark,Light} drive the swap.
-VSCODE_AUTO_DETECT="true"
-_vscode_theme_meta "$THEME_DARK";  VSCODE_DARK_THEME="$VS_NAME";  VSCODE_DARK_EXT="$VS_EXT"
-_vscode_theme_meta "$THEME_LIGHT"; VSCODE_LIGHT_THEME="$VS_NAME"; VSCODE_LIGHT_EXT="$VS_EXT"
-# Cursor/VS Code only swap on macOS appearance when preferredLight points at
-# a vs/hc-light theme. The Dracula extension's "Soft" variant is vs-dark
-# (autoDetectColorScheme silently no-ops with it), so substitute a real light
-# theme (Rosé Pine Dawn) on the IDE side only — tmux/nvim/Ghostty keep using
-# dracula-alucard since each of those has a real light recipe.
-if [[ "$THEME_LIGHT" == "dracula-alucard" ]]; then
-    _vscode_theme_meta "rose-pine-dawn"
-    VSCODE_LIGHT_THEME="$VS_NAME"; VSCODE_LIGHT_EXT="$VS_EXT"
-fi
+# Backwards-compat: legacy user hooks that shell out to `_vscode_theme_meta`
+# still work — it's now a thin alias for `vscode_theme_meta` from the lib.
+_vscode_theme_meta() { vscode_theme_meta "$@"; }
 
 # =============================================================================
 # 11. DIRECTORIES
@@ -783,34 +622,22 @@ print_success "Directories ready"
 # =============================================================================
 print_section "Config Files"
 
-# Ghostty — install all theme files, then build config with chosen theme
+# Ghostty — install all theme files, then build config with chosen theme.
 for theme_file in "$SCRIPT_DIR/configs/ghostty/themes"/*; do
     cp "$theme_file" ~/.config/ghostty/themes/
 done
 backup_file ~/.config/ghostty/config
-sed "s|^theme = .*|theme = $GHOSTTY_THEME|" \
-    "$SCRIPT_DIR/configs/ghostty/config-base" > ~/.config/ghostty/config
+render_ghostty_config "$GHOSTTY_THEME"
 print_success "Ghostty config (theme: $GHOSTTY_THEME)"
 
 # Ghostty on macOS also reads ~/Library/Application Support/com.mitchellh.ghostty/config
 # and auto-creates a template there on first launch when no other config is found.
 # Once that template exists it can shadow ~/.config/ghostty/config and produce
-# surprises like "the theme I configured isn't applying". Make the app-support
-# file a thin include of our XDG config so install.sh remains the single source
-# of truth regardless of how Ghostty was launched.
-GHOSTTY_APP_SUPPORT="$HOME/Library/Application Support/com.mitchellh.ghostty/config"
-GHOSTTY_INCLUDE_LINE='config-file = ~/.config/ghostty/config'
-if [[ -f "$GHOSTTY_APP_SUPPORT" ]]; then
-    if ! command grep -Fxq "$GHOSTTY_INCLUDE_LINE" "$GHOSTTY_APP_SUPPORT"; then
-        backup_file "$GHOSTTY_APP_SUPPORT"
-        printf '%s\n' "$GHOSTTY_INCLUDE_LINE" > "$GHOSTTY_APP_SUPPORT"
-        print_success "Ghostty AppSupport config now includes ~/.config/ghostty/config"
-    fi
-else
-    mkdir -p "$(dirname "$GHOSTTY_APP_SUPPORT")"
-    printf '%s\n' "$GHOSTTY_INCLUDE_LINE" > "$GHOSTTY_APP_SUPPORT"
-    print_success "Ghostty AppSupport config created (includes ~/.config/ghostty/config)"
-fi
+# surprises like "the theme I configured isn't applying". `ensure_ghostty_appsupport_shim`
+# from lib/theme-lib.sh makes the app-support file a thin include of our XDG
+# config so install.sh remains the single source of truth regardless of how
+# Ghostty was launched.
+ECHO_OK=print_success ensure_ghostty_appsupport_shim
 
 # Zsh
 backup_file ~/.zshrc
@@ -946,6 +773,18 @@ cp "$SCRIPT_DIR/cheatsheets/tmux-cheatsheet.txt" ~/.config/tmux-cheatsheet.txt
 cp "$SCRIPT_DIR/cheatsheets/vim-cheatsheet.txt"  ~/.config/vim-cheatsheet.txt
 print_success "Cheatsheets"
 
+# theme-switch — fast standalone theme changer that avoids re-running the
+# entire installer. Deployed as a symlink to the in-repo script so `git pull`
+# in the repo instantly refreshes what `theme-switch` picks up (no re-install
+# required). The script self-resolves the symlink to find the repo root and
+# then sources lib/theme-lib.sh from there.
+mkdir -p ~/.local/bin
+if [[ -L ~/.local/bin/theme-switch || -f ~/.local/bin/theme-switch ]]; then
+    rm -f ~/.local/bin/theme-switch
+fi
+ln -s "$SCRIPT_DIR/bin/theme-switch" ~/.local/bin/theme-switch
+print_success "theme-switch → ~/.local/bin/theme-switch (run 'theme-switch --help')"
+
 # kubectl + helm completions (static files — no subprocess on every shell start)
 if command_exists kubectl; then
     kubectl completion zsh > ~/.zsh/completions/_kubectl 2>/dev/null \
@@ -959,18 +798,10 @@ if command_exists helm; then
 fi
 
 # Render a settings-base.json template into a target settings.json with all
-# the placeholders filled in. Used by Cursor + VS Code below.
-_render_vscode_settings() {
-    local src="$1" dst="$2"
-    sed \
-      -e "s|__VSCODE_COLOR_THEME__|$VSCODE_COLOR_THEME|g" \
-      -e "s|__VSCODE_DARK_THEME__|$VSCODE_DARK_THEME|g" \
-      -e "s|__VSCODE_LIGHT_THEME__|$VSCODE_LIGHT_THEME|g" \
-      -e "s|__VSCODE_AUTO_DETECT__|$VSCODE_AUTO_DETECT|g" \
-      -e "s|__VSCODE_ICON_THEME__|$VSCODE_ICON_THEME|g" \
-      -e "s|__VSCODE_BORDER_COLOR__|$VSCODE_BORDER_COLOR|g" \
-      "$src" > "$dst"
-}
+# the placeholders filled in. `render_vscode_settings` (from lib/theme-lib.sh)
+# does the actual sed dance; this thin alias keeps the local name stable for
+# the Cursor + VS Code call sites just below.
+_render_vscode_settings() { render_vscode_settings "$@"; }
 
 # ── Cursor ──────────────────────────────────────────────────────────────────
 CURSOR_DIR="$HOME/Library/Application Support/Cursor/User"
@@ -985,15 +816,14 @@ if [[ -d "$CURSOR_DIR" ]]; then
         print_success "Cursor settings (theme: $VSCODE_COLOR_THEME)"
     fi
     if command_exists cursor; then
-        cursor --install-extension catppuccin.catppuccin-vsc       2>/dev/null && print_success "Cursor: Catppuccin theme ext"  || true
-        cursor --install-extension catppuccin.catppuccin-vsc-icons 2>/dev/null && print_success "Cursor: Catppuccin icon ext"   || true
-        # Install the extensions for the single theme AND for both ends of a pair
-        # (auto-detect needs both installed; the user might never see dark or light
-        # otherwise depending on which mode boots first).
-        for _ext in "$VSCODE_THEME_EXT" "$VSCODE_DARK_EXT" "$VSCODE_LIGHT_EXT"; do
-            [[ -n "$_ext" ]] || continue
-            cursor --install-extension "$_ext" 2>/dev/null && print_success "Cursor: $_ext" || true
-        done
+        # Install for both ends of the pair (auto-detect needs both installed;
+        # the user might never see dark or light otherwise depending on which
+        # mode boots first). ensure_vscode_extensions skips anything already
+        # present (via --list-extensions) so repeat installs/--update runs
+        # don't touch the network for extensions that are already there.
+        ECHO_OK=print_success ensure_vscode_extensions cursor \
+            catppuccin.catppuccin-vsc catppuccin.catppuccin-vsc-icons \
+            "$VSCODE_THEME_EXT" "$VSCODE_DARK_EXT" "$VSCODE_LIGHT_EXT"
     else
         print_warning "cursor CLI not in PATH — install extensions manually:"
         echo "  cursor --install-extension catppuccin.catppuccin-vsc"
@@ -1019,14 +849,11 @@ if [[ -d "$VSCODE_DIR" ]]; then
         print_success "VS Code settings (theme: $VSCODE_COLOR_THEME)"
     fi
     if command_exists code; then
-        code --install-extension catppuccin.catppuccin-vsc                    2>/dev/null && print_success "VS Code: Catppuccin theme ext"  || true
-        code --install-extension catppuccin.catppuccin-vsc-icons              2>/dev/null && print_success "VS Code: Catppuccin icon ext"   || true
-        # Install the extensions for the single theme AND for both ends of a
-        # pair so auto-detect always has the underlying theme available.
-        for _ext in "$VSCODE_THEME_EXT" "$VSCODE_DARK_EXT" "$VSCODE_LIGHT_EXT"; do
-            [[ -n "$_ext" ]] || continue
-            code --install-extension "$_ext" 2>/dev/null && print_success "VS Code: $_ext" || true
-        done
+        # Install for both ends of the pair so auto-detect always has the
+        # underlying theme available, regardless of which mode boots first.
+        ECHO_OK=print_success ensure_vscode_extensions code \
+            catppuccin.catppuccin-vsc catppuccin.catppuccin-vsc-icons \
+            "$VSCODE_THEME_EXT" "$VSCODE_DARK_EXT" "$VSCODE_LIGHT_EXT"
         code --install-extension esbenp.prettier-vscode                       2>/dev/null && print_success "VS Code: Prettier"              || true
         code --install-extension ms-python.python                             2>/dev/null && print_success "VS Code: Python"                || true
         code --install-extension ms-python.black-formatter                    2>/dev/null && print_success "VS Code: Black formatter"       || true
@@ -1218,7 +1045,9 @@ echo "  2. Reload shell:  source ~/.zshrc"
 echo "  3. Run 'nvim'  — lazy.nvim auto-installs plugins on first launch"
 echo ""
 echo "Color pair: $THEME_DARK ↔ $THEME_LIGHT  (auto-switches with macOS appearance)"
-echo "  To change: ./install.sh --update --theme=<n|key>"
+echo "  To change:  theme-switch <n|key>       (fast — only touches theme files)"
+echo "              theme-switch                (interactive menu)"
+echo "              theme-switch --list         (all pairs)"
 echo "    Number 1-15 or key: catppuccin, catppuccin-macchiato, catppuccin-frappe,"
 echo "                        tokyo-night, tokyo-night-storm, tokyo-night-moon,"
 echo "                        rose-pine, rose-pine-moon, dracula,"
