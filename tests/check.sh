@@ -365,6 +365,38 @@ else
     fail "install.sh no longer installs gh-dash via 'gh extension install dlvhdr/gh-dash'"
 fi
 
+# Regression guard: tmux/nvim can only hold ONE palette at a time. If the
+# installers always deploy the DARK half of the pair, switching themes while
+# macOS is in light mode leaves Ghostty/Cursor light but tmux/nvim dark —
+# which reads as "the switch is broken". Both entry points must pick the
+# variant matching the current macOS appearance (macos_appearance_mode).
+if grep -q "^macos_appearance_mode()" "$REPO/lib/theme-lib.sh"; then
+    ok "lib/theme-lib.sh defines macos_appearance_mode"
+else
+    fail "lib/theme-lib.sh is missing macos_appearance_mode — installers can't pick the appearance-matched tmux/nvim variant"
+fi
+if grep -q 'apply_tmux_theme "\$ACTIVE"' "$REPO/bin/theme-switch" \
+   && grep -q 'apply_nvim_theme "\$ACTIVE"' "$REPO/bin/theme-switch"; then
+    ok "bin/theme-switch applies the appearance-matched variant to tmux/nvim"
+else
+    fail "bin/theme-switch hardcodes a pair half for tmux/nvim — must apply \$ACTIVE (from macos_appearance_mode) or light-mode switches look broken"
+fi
+if grep -q 'ACTIVE_THEME' "$REPO/install.sh"; then
+    ok "install.sh deploys the appearance-matched tmux/nvim variant (ACTIVE_THEME)"
+else
+    fail "install.sh no longer uses ACTIVE_THEME for tmux/nvim — installing in light mode would force dark palettes"
+fi
+
+# Regression guard: the bat/delta theme mapping lives in exactly one place
+# (_apply-bat-delta-theme in zshrc). It previously existed twice (startup
+# block + theme-sync) and the copies drifted.
+_batmap_count=$(grep -c "_apply-bat-delta-theme" "$REPO/configs/zsh/zshrc" || true)
+if grep -q "^function _apply-bat-delta-theme" "$REPO/configs/zsh/zshrc" && (( _batmap_count >= 3 )); then
+    ok "zshrc defines _apply-bat-delta-theme and reuses it (startup + theme-sync)"
+else
+    fail "zshrc bat/delta mapping is no longer shared via _apply-bat-delta-theme — the startup block and theme-sync will drift apart again"
+fi
+
 # ── 5. No personal / company-specific info ───────────────────────────────────
 section "No personal info"
 

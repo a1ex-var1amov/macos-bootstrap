@@ -597,6 +597,11 @@ theme_choice_to_pair "$COLOR_CHOICE"
 COLOR_THEME="$THEME_DARK"
 GHOSTTY_THEME="dark:$THEME_DARK,light:$THEME_LIGHT"
 
+# tmux/nvim hold one palette at a time — deploy the variant matching the
+# current macOS appearance (theme-sync flips them when appearance changes).
+APPEARANCE_MODE="$(macos_appearance_mode)"
+if [[ "$APPEARANCE_MODE" == dark ]]; then ACTIVE_THEME="$THEME_DARK"; else ACTIVE_THEME="$THEME_LIGHT"; fi
+
 save_theme_choice "$THEME_DARK" "$THEME_LIGHT"
 print_success "Color pair: $THEME_DARK ↔ $THEME_LIGHT (Ghostty: $GHOSTTY_THEME)"
 
@@ -689,8 +694,8 @@ for _nvim_theme in "$SCRIPT_DIR/configs/nvim/themes"/*.lua; do
     [[ "${_nvim_theme##*/}" == "theme_base.lua" ]] && continue
     cp "$_nvim_theme" ~/.config/nvim/lua/themes/
 done
-cp "$SCRIPT_DIR/configs/nvim/themes/${COLOR_THEME}.lua" ~/.config/nvim/lua/active_theme.lua
-print_success "Neovim config + theme: $COLOR_THEME (run 'nvim' once to auto-install plugins)"
+cp "$SCRIPT_DIR/configs/nvim/themes/${ACTIVE_THEME}.lua" ~/.config/nvim/lua/active_theme.lua
+print_success "Neovim config + theme: $ACTIVE_THEME (run 'nvim' once to auto-install plugins)"
 
 # Vim
 backup_file ~/.vimrc
@@ -755,7 +760,7 @@ cp "$SCRIPT_DIR/configs/tmux/tmux.conf" ~/.tmux.conf
 for _tmux_theme in "$SCRIPT_DIR/configs/tmux/themes"/*.conf; do
     cp "$_tmux_theme" ~/.config/tmux/themes/
 done
-cp "$SCRIPT_DIR/configs/tmux/themes/${COLOR_THEME}.conf" ~/.config/tmux-theme.conf
+cp "$SCRIPT_DIR/configs/tmux/themes/${ACTIVE_THEME}.conf" ~/.config/tmux-theme.conf
 for _tmux_script in "$SCRIPT_DIR/configs/tmux/scripts"/*.sh; do
     cp "$_tmux_script" ~/.config/tmux/scripts/
     chmod +x ~/.config/tmux/scripts/"${_tmux_script##*/}"
@@ -767,7 +772,7 @@ for _tmux_extra in "$SCRIPT_DIR/configs/tmux/extras"/*.conf; do
 done
 cp "$SCRIPT_DIR/configs/tmux/extras/mouse-${TMUX_MOUSE_CHOICE}.conf" \
    ~/.config/tmux-mouse.conf
-print_success "Tmux config + theme: $COLOR_THEME, mouse=$TMUX_MOUSE_CHOICE"
+print_success "Tmux config + theme: $ACTIVE_THEME, mouse=$TMUX_MOUSE_CHOICE"
 
 # Git — config (delta, globals, aliases) + global gitignore
 backup_file ~/.config/git/gitconfig
@@ -976,7 +981,7 @@ print_section "Post-install"
 
 # Reload tmux config if a session is running (picks up new theme immediately)
 if command_exists tmux && tmux list-sessions &>/dev/null; then
-    tmux source-file ~/.tmux.conf 2>/dev/null && print_success "Tmux config reloaded (theme: $COLOR_THEME)"
+    tmux source-file ~/.tmux.conf 2>/dev/null && print_success "Tmux config reloaded (theme: $ACTIVE_THEME)"
 fi
 
 # Tmux auto-start — in update mode, leave existing setting alone.

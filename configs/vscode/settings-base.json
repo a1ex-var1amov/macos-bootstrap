@@ -12,7 +12,7 @@
   // ==========================================================================
   // THEME (set by install.sh — run ./install.sh to change)
   //
-  // When a dark/light theme PAIR is chosen (install.sh options 12-20), VS Code
+  // When a dark/light theme PAIR is chosen (any install.sh / theme-switch pair), VS Code
   // follows macOS appearance natively:
   //   window.autoDetectColorScheme = true
   //   workbench.preferredDarkColorTheme / preferredLightColorTheme drive the swap.

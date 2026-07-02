@@ -256,7 +256,7 @@ Every theme pair wires Cursor and VS Code to natively follow the macOS appearanc
 - `workbench.preferredDarkColorTheme = <dark theme>` (e.g. Catppuccin Mocha)
 - `workbench.preferredLightColorTheme = <light theme>` (e.g. Catppuccin Latte)
 
-Toggle macOS appearance (System Settings -> Appearance, or via Raycast / a Shortcut) and Cursor swaps themes instantly — no IDE restart, no helper script. The terminal stack (`tmux`, `bat`, `delta`, `neovim`) is updated by the existing `theme-sync` shell function. Ghostty already follows macOS natively via its `dark:foo,light:bar` config syntax.
+Toggle macOS appearance (System Settings -> Appearance, or via Raycast / a Shortcut) and Cursor swaps themes instantly — no IDE restart, no helper script. The terminal stack (`tmux`, `bat`, `delta`, `neovim`) holds one palette at a time, so run the `theme-sync` shell function after flipping appearance to bring it along. `install.sh` and `theme-switch` deploy the variant matching whatever appearance is active at the time they run. Ghostty already follows macOS natively via its `dark:foo,light:bar` config syntax.
 
 For unattended installs (e.g. provisioning a new mac), `./install.sh --yes --theme=gruvbox` (or `--theme=11`) picks the pair non-interactively. The flag accepts either the menu number (1–15) or any name in the key list above. See `./install.sh --help` for the full mapping.
 

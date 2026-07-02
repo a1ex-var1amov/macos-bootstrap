@@ -411,7 +411,20 @@ compute_vscode_pair_metadata() {
     VSCODE_AUTO_DETECT="true"
 }
 
-# apply_tmux_theme <theme-dark> → copies the tmux theme file to
+# macos_appearance_mode → prints "dark" or "light" for the current macOS
+# system appearance. Ghostty/Cursor/VS Code follow appearance natively via
+# their pair configs, but tmux/nvim/bat can only hold ONE palette at a time —
+# callers use this to apply the matching half of the pair instead of always
+# defaulting to dark (which looked broken when switching themes in light mode).
+macos_appearance_mode() {
+    if [[ "$(defaults read -g AppleInterfaceStyle 2>/dev/null)" == "Dark" ]]; then
+        echo dark
+    else
+        echo light
+    fi
+}
+
+# apply_tmux_theme <theme-key> → copies the tmux theme file to
 # ~/.config/tmux-theme.conf and live-reloads any running tmux server.
 apply_tmux_theme() {
     local dark="$1"
@@ -427,7 +440,7 @@ apply_tmux_theme() {
     fi
 }
 
-# apply_nvim_theme <theme-dark> → copies the nvim theme delegate to
+# apply_nvim_theme <theme-key> → copies the nvim theme delegate to
 # ~/.config/nvim/lua/active_theme.lua.
 apply_nvim_theme() {
     local dark="$1"

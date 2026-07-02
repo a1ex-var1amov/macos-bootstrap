@@ -25,7 +25,7 @@ Twelve themes are available across four families:
 - **Rosé Pine**: Main, Moon, Dawn (light)
 - **Dracula**: classic dark purple, Alucard (light warm cream)
 
-Pairs-only menu (15 pairs) — every pair auto-switches with macOS appearance in Ghostty/tmux/nvim/Cursor/VS Code/bat/delta. Slack has no config file or API for this, so its sidebar theme string is generated and printed/copied to the clipboard for a manual one-time paste per pair instead (see "Slack sidebar theme" below):
+Pairs-only menu (15 pairs) — every pair auto-switches with macOS appearance in Ghostty/Cursor/VS Code natively; tmux/nvim/bat/delta follow via the `theme-sync` shell function (manual — nothing watches appearance changes for them). Slack has no config file or API for this, so its sidebar theme string is generated and printed/copied to the clipboard for a manual one-time paste per pair instead (see "Slack sidebar theme" below):
 
 | # | Pair | Dark | Light |
 |---|------|------|-------|
@@ -65,6 +65,10 @@ theme-switch --current        # print the active pair
 theme-switch --slack          # print/copy Slack theme strings for the current pair
 ```
 Skip-work fast path: if the requested pair equals the current one, `theme-switch` exits immediately without rewriting any file. Cursor / VS Code still need a "Developer: Reload Window" to pick up the new theme; every other layer (Ghostty, tmux, nvim, bat, delta) live-reloads (Ghostty via `reload_ghostty_if_running`, see below).
+
+**Appearance-matched tmux/nvim variant**: Ghostty/Cursor/VS Code hold both halves of the pair in config and flip natively with macOS appearance, but tmux and nvim hold ONE palette file at a time (`~/.config/tmux-theme.conf`, `active_theme.lua`). Both `install.sh` and `theme-switch` pick the half matching the *current* macOS appearance via `macos_appearance_mode` (in `lib/theme-lib.sh`) — previously they hardcoded the dark half, so switching pairs while in light mode left tmux/nvim visibly mismatched. `theme-sync` (zshrc function) flips these single-palette layers when the appearance later changes; nothing runs it automatically — it's a manual/on-demand step.
+
+**bat/delta theme mapping — one function**: `_apply-bat-delta-theme` in `configs/zsh/zshrc` maps a theme key + mode onto `BAT_THEME` / `GIT_CONFIG_PARAMETERS` (delta). It's called by both the shell-startup block and `theme-sync` — it used to exist as two inline copies that drifted (only Catppuccin/Dracula were mapped; gruvbox/nord/solarized fell back to generic `base16`/`GitHub` despite bat shipping native themes for them). Pairs with no bat builtin (tokyo-night, kanagawa, everforest, rose-pine, github-dark) still use the generic fallback; the upgrade path is dropping `.tmTheme` files into `~/.config/bat/themes`.
 
 **Slack sidebar theme**: Slack has no config file, CLI, or public API for setting the sidebar theme. `vscode_theme_meta` (in `lib/theme-lib.sh`) carries a `VS_SLACK` string per theme key, in Slack's own legacy field order (matches the `sidebar_theme_custom_values` object from Slack's `users.prefs.get` API: `column_bg,menu_bg,active_item,active_item_text,hover_item,text_color,active_presence,badge`), derived from the same `@bg/@surface/@accent/@text/@muted/@ok/@err` tokens as the tmux theme files — no separate palette to maintain per theme. `compute_vscode_pair_metadata` captures both `SLACK_THEME_DARK` and `SLACK_THEME_LIGHT`; `print_slack_theme_block` (shared by `install.sh` and `theme-switch`) prints both, gated on `app_installed "Slack"`, and copies the dark variant to the clipboard via `pbcopy`. Both a full `install.sh` run and every real `theme-switch` pair change print this automatically; `theme-switch --slack` reprints it for the current pair on demand without switching anything. `tests/check.sh` validates every `VS_SLACK` string is exactly 8 well-formed `#RRGGBB` values.
 

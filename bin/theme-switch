@@ -199,12 +199,20 @@ fi
 
 status "Switching to $NEW_DARK ↔ $NEW_LIGHT"
 
+# tmux/nvim hold a single palette at a time — pick the variant matching the
+# current macOS appearance so a daytime switch doesn't force dark on them.
+# (theme-sync flips them later when the appearance changes.)
+MODE="$(macos_appearance_mode)"
+if [[ "$MODE" == dark ]]; then ACTIVE="$NEW_DARK"; else ACTIVE="$NEW_LIGHT"; fi
+
 # ── Prerequisite check — theme files must exist ─────────────────────────────
 MISSING=()
 [[ -f "$REPO/configs/ghostty/themes/$NEW_DARK"          ]] || MISSING+=("ghostty:$NEW_DARK")
 [[ -f "$REPO/configs/ghostty/themes/$NEW_LIGHT"         ]] || MISSING+=("ghostty:$NEW_LIGHT")
 [[ -f "$REPO/configs/tmux/themes/$NEW_DARK.conf"        ]] || MISSING+=("tmux:$NEW_DARK")
+[[ -f "$REPO/configs/tmux/themes/$NEW_LIGHT.conf"       ]] || MISSING+=("tmux:$NEW_LIGHT")
 [[ -f "$REPO/configs/nvim/themes/$NEW_DARK.lua"         ]] || MISSING+=("nvim:$NEW_DARK")
+[[ -f "$REPO/configs/nvim/themes/$NEW_LIGHT.lua"        ]] || MISSING+=("nvim:$NEW_LIGHT")
 if (( ${#MISSING[@]} > 0 )); then
     warn "Missing theme files: ${MISSING[*]}"
     warn "Run ./install.sh from $REPO first to deploy the theme files."
@@ -265,11 +273,11 @@ fi
 # ── Tmux ────────────────────────────────────────────────────────────────────
 mkdir -p ~/.config/tmux/themes
 cp "$REPO"/configs/tmux/themes/*.conf ~/.config/tmux/themes/
-if apply_tmux_theme "$NEW_DARK"; then
+if apply_tmux_theme "$ACTIVE"; then
     if command -v tmux >/dev/null 2>&1 && tmux info &>/dev/null; then
-        success "Tmux     → $NEW_DARK (live-reloaded)"
+        success "Tmux     → $ACTIVE (live-reloaded, macOS is in $MODE mode)"
     else
-        success "Tmux     → $NEW_DARK (server not running — will pick up on next start)"
+        success "Tmux     → $ACTIVE (server not running — will pick up on next start)"
     fi
 fi
 
@@ -279,8 +287,8 @@ for f in "$REPO"/configs/nvim/themes/*.lua; do
     [[ "$(basename "$f")" == "theme_base.lua" ]] && continue
     cp "$f" ~/.config/nvim/lua/themes/
 done
-if apply_nvim_theme "$NEW_DARK"; then
-    success "Neovim   → $NEW_DARK (open a new nvim, or :source \$MYVIMRC in an existing one)"
+if apply_nvim_theme "$ACTIVE"; then
+    success "Neovim   → $ACTIVE (open a new nvim, or :source \$MYVIMRC in an existing one)"
 fi
 
 # ── Slack ───────────────────────────────────────────────────────────────────

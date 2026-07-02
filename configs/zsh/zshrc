@@ -285,35 +285,57 @@ fi
 alias tailf="tail -f"
 
 # Modern CLI replacements (with fallbacks)
+
+# Map the active theme key + dark/light mode onto bat + delta and export
+# BAT_THEME / GIT_CONFIG_PARAMETERS for the current shell. Single source of
+# truth — used by the startup block below AND by theme-sync, so the two can't
+# drift apart again.
+function _apply-bat-delta-theme() {
+  local t="$1" mode="$2" bt
+  case "$t" in
+    catppuccin-mocha|catppuccin-macchiato) bt="Catppuccin Mocha" ;;
+    catppuccin-frappe)                     bt="Catppuccin Frappe" ;;
+    catppuccin-latte)                      bt="Catppuccin Latte" ;;
+    dracula)                               bt="Dracula" ;;
+    gruvbox-dark)                          bt="gruvbox-dark" ;;
+    gruvbox-light)                         bt="gruvbox-light" ;;
+    nord)                                  bt="Nord" ;;
+    solarized-dark)                        bt="Solarized (dark)" ;;
+    solarized-light)                       bt="Solarized (light)" ;;
+    github-light)                          bt="GitHub" ;;
+    # ponytail: bat ships no builtins for tokyo-night / kanagawa / everforest /
+    # rose-pine / github-dark / nord-light / dracula-alucard — generic dark/
+    # light fallbacks. Upgrade path: drop .tmTheme files into
+    # ~/.config/bat/themes and extend this case.
+    *) [[ "$mode" == dark ]] && bt="base16" || bt="GitHub" ;;
+  esac
+  export BAT_THEME="$bt"
+  # Light themes need delta's light-mode diff colors too
+  case "$bt" in
+    GitHub|"Catppuccin Latte"|OneHalfLight|"Solarized (light)"|gruvbox-light)
+      export GIT_CONFIG_PARAMETERS="'delta.syntax-theme=${bt}' 'delta.light=true'" ;;
+    *)
+      export GIT_CONFIG_PARAMETERS="'delta.syntax-theme=${bt}' 'delta.light=false'" ;;
+  esac
+}
+
 if (( $+commands[bat] )); then
   # Pick bat theme matching macOS dark/light mode and active color scheme
-  export BAT_THEME=$((){
-    local _is_dark _t
+  () {
+    local _is_dark _t _mode
     _is_dark="$(defaults read -g AppleInterfaceStyle 2>/dev/null)"
+    [[ "$_is_dark" == "Dark" ]] && _mode=dark || _mode=light
     if [[ -f ~/.config/terminal-theme-pair ]]; then
       local THEME_DARK THEME_LIGHT
       source ~/.config/terminal-theme-pair
-      [[ "$_is_dark" == "Dark" ]] && _t="$THEME_DARK" || _t="$THEME_LIGHT"
+      [[ "$_mode" == dark ]] && _t="$THEME_DARK" || _t="$THEME_LIGHT"
     else
       local COLOR_THEME
       source ~/.config/terminal-color-theme 2>/dev/null
       _t="$COLOR_THEME"
     fi
-    case "$_t" in
-      catppuccin-mocha|catppuccin-macchiato) print "Catppuccin Mocha" ;;
-      catppuccin-frappe)                     print "Catppuccin Frappe" ;;
-      catppuccin-latte)                      print "Catppuccin Latte" ;;
-      dracula)                               print "Dracula" ;;
-      *)  [[ "$_is_dark" == "Dark" ]] && print "base16" || print "GitHub" ;;
-    esac
-  })
-  # Light themes need delta's light-mode diff colors too
-  case "$BAT_THEME" in
-    GitHub|"Catppuccin Latte"|OneHalfLight|"Solarized (light)"|gruvbox-light)
-      export GIT_CONFIG_PARAMETERS="'delta.syntax-theme=${BAT_THEME}' 'delta.light=true'" ;;
-    *)
-      export GIT_CONFIG_PARAMETERS="'delta.syntax-theme=${BAT_THEME}' 'delta.light=false'" ;;
-  esac
+    _apply-bat-delta-theme "$_t" "$_mode"
+  }
   alias cat="bat --paging=never"
   alias catp="bat"  # with pager
 fi
@@ -895,7 +917,7 @@ fi
 
 # --- Dark / light theme sync ---
 # Switches tmux and Neovim to match macOS appearance.
-# Requires a pair theme (choices 12-20 in install.sh), which writes:
+# Requires a theme pair (any install.sh / theme-switch choice), which writes:
 #   ~/.config/terminal-theme-pair   (THEME_DARK + THEME_LIGHT vars)
 #   ~/.config/tmux/themes/          (all tmux theme files)
 #   ~/.config/nvim/lua/themes/      (all nvim theme files)
@@ -906,7 +928,7 @@ fi
 #   theme-sync light    force light theme
 function theme-sync() {
   if [[ ! -f ~/.config/terminal-theme-pair ]]; then
-    echo "No pair theme configured. Run install.sh and choose a pair (options 12-20)."
+    echo "No theme pair configured. Run install.sh (or theme-switch) and pick one."
     return 1
   fi
   source ~/.config/terminal-theme-pair
@@ -939,21 +961,8 @@ function theme-sync() {
     echo "Nvim theme file not found: $nvim_theme_src (re-run install.sh)"
   fi
 
-  # bat / delta — update in the running shell immediately
-  local bat_theme
-  case "$theme" in
-    catppuccin-mocha|catppuccin-macchiato) bat_theme="Catppuccin Mocha" ;;
-    catppuccin-frappe)                     bat_theme="Catppuccin Frappe" ;;
-    catppuccin-latte)                      bat_theme="Catppuccin Latte" ;;
-    dracula)                               bat_theme="Dracula" ;;
-    *)  [[ "$mode" == "dark" ]] && bat_theme="base16" || bat_theme="GitHub" ;;
-  esac
-  export BAT_THEME="$bat_theme"
-  case "$bat_theme" in
-    GitHub|"Catppuccin Latte"|OneHalfLight|"Solarized (light)"|gruvbox-light)
-      export GIT_CONFIG_PARAMETERS="'delta.syntax-theme=${bat_theme}' 'delta.light=true'" ;;
-    *)
-      export GIT_CONFIG_PARAMETERS="'delta.syntax-theme=${bat_theme}' 'delta.light=false'" ;;
-  esac
-  echo "bat/delta → $bat_theme"
+  # bat / delta — update in the running shell immediately (shared mapping,
+  # defined next to the bat startup block above)
+  _apply-bat-delta-theme "$theme" "$mode"
+  echo "bat/delta → $BAT_THEME"
 }
