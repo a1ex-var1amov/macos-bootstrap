@@ -57,7 +57,10 @@ quit-after-last-window-closed = true
 # =============================================================================
 # SCROLLBACK
 # =============================================================================
-scrollback-limit = 100000
+# ponytail: Ghostty has no "unlimited" scrollback yet (upstream planned feature).
+# Limit is in bytes (includes active screen + buffer), allocated lazily — 100MB
+# is effectively endless for daily use without pinning RAM upfront.
+scrollback-limit = 100000000
 
 # =============================================================================
 # COLOR THEME (managed by install.sh — edit theme name below or run ./install.sh)

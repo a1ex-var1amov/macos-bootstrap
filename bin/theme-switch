@@ -291,13 +291,10 @@ if apply_nvim_theme "$ACTIVE"; then
     success "Neovim   → $ACTIVE (open a new nvim, or :source \$MYVIMRC in an existing one)"
 fi
 
-# ── Slack ───────────────────────────────────────────────────────────────────
-# No config file/API to push this into Slack automatically — print + copy
-# the string instead. compute_vscode_pair_metadata (above) already populated
-# SLACK_THEME_DARK/LIGHT from this exact pair.
+echo ""
+success "Done. Reload Cursor / VS Code windows to see the new pair take effect."
+
+# Slack last — easy to spot/copy after the switch summary.
 if app_installed "Slack"; then
     print_slack_theme_block "$NEW_DARK" "$SLACK_THEME_DARK" "$NEW_LIGHT" "$SLACK_THEME_LIGHT" success
 fi
-
-echo ""
-success "Done. Reload Cursor / VS Code windows to see the new pair take effect."

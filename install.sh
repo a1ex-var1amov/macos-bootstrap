@@ -894,14 +894,6 @@ else
     print_warning "VS Code not found — skipping VS Code config"
 fi
 
-# ── Slack ────────────────────────────────────────────────────────────────────
-if app_installed "Slack"; then
-    print_status "Slack sidebar theme for: $THEME_DARK ↔ $THEME_LIGHT"
-    print_slack_theme_block "$THEME_DARK" "$SLACK_THEME_DARK" "$THEME_LIGHT" "$SLACK_THEME_LIGHT" print_success
-else
-    print_warning "Slack not found — skipping Slack theme"
-fi
-
 # =============================================================================
 # 13. MACOS DEFAULTS
 # =============================================================================
@@ -1094,3 +1086,9 @@ echo ""
 echo "Modern CLI (auto-aliased when installed):"
 echo "  cat→bat  ls→eza  grep→rg  find→fd  top→btop  df→duf  du→dust  diff→delta"
 echo ""
+
+# Slack last — easy to spot/copy after the install noise dies down.
+if app_installed "Slack"; then
+    print_status "Slack sidebar theme for: $THEME_DARK ↔ $THEME_LIGHT"
+    print_slack_theme_block "$THEME_DARK" "$SLACK_THEME_DARK" "$THEME_LIGHT" "$SLACK_THEME_LIGHT" print_success
+fi
