@@ -222,19 +222,28 @@ require("lazy").setup({
 
   -- -------------------------------------------------------------------------
   -- Mason — automatic LSP server installer (UI: :Mason)
+  -- mason-lspconfig v2 requires mason.nvim v2 (both from mason-org).
+  -- Pin major versions together or ensure_installed blows up with
+  -- "attempt to call method 'is_installing' (a nil value)" on mason v1.
   -- -------------------------------------------------------------------------
   {
-    "williamboman/mason.nvim",
+    "mason-org/mason.nvim",
+    version = "^2.0.0",
     build = ":MasonUpdate",
     opts  = { ui = { border = "rounded" } },
   },
 
   -- -------------------------------------------------------------------------
-  -- mason-lspconfig — bridges Mason ↔ nvim-lspconfig
+  -- mason-lspconfig — bridges Mason ↔ nvim-lspconfig (v2 + vim.lsp.config)
+  -- nvim-lspconfig must be a dependency so it is on rtp before .setup() runs.
   -- -------------------------------------------------------------------------
   {
-    "williamboman/mason-lspconfig.nvim",
-    dependencies = { "williamboman/mason.nvim" },
+    "mason-org/mason-lspconfig.nvim",
+    version = "^2.0.0",
+    dependencies = {
+      "mason-org/mason.nvim",
+      "neovim/nvim-lspconfig",
+    },
     opts = {
       ensure_installed = {
         "lua_ls",    -- Lua
@@ -254,8 +263,6 @@ require("lazy").setup({
   {
     "neovim/nvim-lspconfig",
     dependencies = {
-      "williamboman/mason.nvim",
-      "williamboman/mason-lspconfig.nvim",
       "hrsh7th/cmp-nvim-lsp",
     },
     config = function()

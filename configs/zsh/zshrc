@@ -945,7 +945,7 @@ function theme-sync() {
   # Tmux
   local tmux_theme_src="$HOME/.config/tmux/themes/${theme}.conf"
   if [[ -f "$tmux_theme_src" ]]; then
-    cp "$tmux_theme_src" ~/.config/tmux-theme.conf
+    /bin/cp "$tmux_theme_src" ~/.config/tmux-theme.conf
     tmux source-file ~/.tmux.conf 2>/dev/null && \
       echo "Tmux → $theme"
   else
@@ -955,7 +955,7 @@ function theme-sync() {
   # Neovim
   local nvim_theme_src="$HOME/.config/nvim/lua/themes/${theme}.lua"
   if [[ -f "$nvim_theme_src" ]]; then
-    cp "$nvim_theme_src" ~/.config/nvim/lua/active_theme.lua
+    /bin/cp "$nvim_theme_src" ~/.config/nvim/lua/active_theme.lua
     echo "Neovim → $theme (takes effect in new nvim instances)"
   else
     echo "Nvim theme file not found: $nvim_theme_src (re-run install.sh)"

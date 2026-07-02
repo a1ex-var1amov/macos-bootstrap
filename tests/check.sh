@@ -122,6 +122,27 @@ done
     && ok "bin/theme-switch (executable)" \
     || fail "bin/theme-switch is NOT executable — chmod +x"
 
+# mason-lspconfig v2 calls Package:is_installing(), which only exists in mason v2.
+# Pin both to mason-org and ^2.0.0 or Lazy pulls mason v1 + mason-lspconfig v2 and
+# Neovim throws on every startup.
+if grep -q '"mason-org/mason.nvim"' "$REPO/configs/nvim/init.lua" \
+   && grep -q 'version = "\^2.0.0"' "$REPO/configs/nvim/init.lua"; then
+    ok "nvim init.lua pins mason-org/mason.nvim ^2.0.0"
+else
+    fail "nvim init.lua must pin mason-org/mason.nvim ^2.0.0 (mason-lspconfig v2 breaks on mason v1)"
+fi
+if grep -q '"mason-org/mason-lspconfig.nvim"' "$REPO/configs/nvim/init.lua" \
+   && grep -q 'neovim/nvim-lspconfig' "$REPO/configs/nvim/init.lua"; then
+    ok "nvim init.lua uses mason-org/mason-lspconfig with nvim-lspconfig dependency"
+else
+    fail "nvim init.lua must use mason-org/mason-lspconfig.nvim with neovim/nvim-lspconfig as a dependency (load order)"
+fi
+if grep -q 'williamboman/mason' "$REPO/configs/nvim/init.lua"; then
+    fail "nvim init.lua still references williamboman/mason* — use mason-org URLs"
+else
+    ok "nvim init.lua uses mason-org plugin URLs"
+fi
+
 # Every tmux theme file must define all the @color tokens used in tmux.conf.
 section "Tmux theme tokens"
 
