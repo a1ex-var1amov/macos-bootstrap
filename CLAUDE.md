@@ -25,7 +25,7 @@ Twelve themes are available across four families:
 - **Rosé Pine**: Main, Moon, Dawn (light)
 - **Dracula**: classic dark purple, Alucard (light warm cream)
 
-Pairs-only menu (15 pairs) — every pair auto-switches with macOS appearance in Ghostty/tmux/nvim/Cursor/VS Code/Slack/bat/delta:
+Pairs-only menu (15 pairs) — every pair auto-switches with macOS appearance in Ghostty/tmux/nvim/Cursor/VS Code/bat/delta. Slack has no config file or API for this, so its sidebar theme string is generated and printed/copied to the clipboard for a manual one-time paste per pair instead (see "Slack sidebar theme" below):
 
 | # | Pair | Dark | Light |
 |---|------|------|-------|
@@ -62,8 +62,11 @@ theme-switch 11               # non-interactive; menu-number or key
 theme-switch gruvbox          # same, by name (legacy single-theme keys too)
 theme-switch --list           # print all pairs
 theme-switch --current        # print the active pair
+theme-switch --slack          # print/copy Slack theme strings for the current pair
 ```
-Skip-work fast path: if the requested pair equals the current one, `theme-switch` exits immediately without rewriting any file. Cursor / VS Code still need a "Developer: Reload Window" to pick up the new theme; every other layer (Ghostty, tmux, nvim, bat, delta) live-reloads.
+Skip-work fast path: if the requested pair equals the current one, `theme-switch` exits immediately without rewriting any file. Cursor / VS Code still need a "Developer: Reload Window" to pick up the new theme; every other layer (Ghostty, tmux, nvim, bat, delta) live-reloads (Ghostty via `reload_ghostty_if_running`, see below).
+
+**Slack sidebar theme**: Slack has no config file, CLI, or public API for setting the sidebar theme — the only way in is pasting an 8-value comma-separated hex string into Preferences → Themes → Custom theme. `vscode_theme_meta` (in `lib/theme-lib.sh`) carries a `VS_SLACK` string per theme key, in Slack's own field order (matches the `sidebar_theme_custom_values` object from Slack's `users.prefs.get` API: `column_bg,menu_bg,active_item,active_item_text,hover_item,text_color,active_presence,badge`), derived from the same `@bg/@surface/@accent/@text/@muted/@ok/@err` tokens as the tmux theme files — no separate palette to maintain per theme. `compute_vscode_pair_metadata` captures both `SLACK_THEME_DARK` and `SLACK_THEME_LIGHT`; `print_slack_theme_block` (shared by `install.sh` and `theme-switch`) prints both, gated on `app_installed "Slack"`, and copies the dark variant to the clipboard via `pbcopy`. Both a full `install.sh` run and every real `theme-switch` pair change print this automatically; `theme-switch --slack` reprints it for the current pair on demand without switching anything. `tests/check.sh` validates every `VS_SLACK` string is exactly 8 well-formed `#RRGGBB` values.
 
 **Extension installs happen on every real switch, not just the first `install.sh` run**: rendering `settings.json` with a theme name whose extension was never installed doesn't error anywhere — Cursor/VS Code just silently keep showing whatever theme was already active, which looks exactly like "the switch didn't work" (this was a real bug: 4 of the 15 pairs appeared broken because their extensions were only ever installed for whichever pair `install.sh` happened to be run with). Both `install.sh` and `theme-switch` now call `ensure_vscode_extensions` (in `lib/theme-lib.sh`) for the pair's dark/light `VS_EXT` ids, which checks `--list-extensions` first (fast, offline) so already-seen pairs stay instant — only a genuinely new pair touches the network. Every `cursor`/`code` CLI call inside it is wrapped in `_run_with_timeout` (a portable polling-based timeout, since macOS ships neither `timeout` nor bash 4.3's `wait -n`) so a hung editor CLI can never wedge the whole script.
 

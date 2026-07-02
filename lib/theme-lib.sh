@@ -395,11 +395,16 @@ compute_vscode_pair_metadata() {
     VSCODE_ICON_THEME="$VS_ICON"
     VSCODE_BORDER_COLOR="$VS_BORDER"
     VSCODE_THEME_EXT="$VS_EXT"
-    SLACK_THEME="$VS_SLACK"
+    SLACK_THEME_DARK="$VS_SLACK"
 
     vscode_theme_meta "$light"
     VSCODE_LIGHT_THEME="$VS_NAME"
     VSCODE_LIGHT_EXT="$VS_EXT"
+    # Deliberately read Slack's light string from the *real* light theme
+    # (before any dracula-alucard IDE override below) — Slack has no vs-dark
+    # "no real light variant" problem, so it should always get the actual
+    # light palette rather than the IDE's substitute.
+    SLACK_THEME_LIGHT="$VS_SLACK"
     if [[ "$light" == "dracula-alucard" ]]; then
         vscode_theme_meta "rose-pine-dawn"
         VSCODE_LIGHT_THEME="$VS_NAME"
@@ -431,6 +436,37 @@ apply_nvim_theme() {
     local src="$THEME_LIB_REPO/configs/nvim/themes/${dark}.lua"
     [[ -f "$src" ]] || return 1
     cp "$src" ~/.config/nvim/lua/active_theme.lua
+}
+
+# app_installed <App Name> → true if <App Name>.app exists in either the
+# system or per-user Applications folder. Shared by install.sh (GUI app
+# detection) and theme-switch (gating the Slack theme printout below).
+app_installed() {
+    local app="$1"
+    [[ -d "/Applications/${app}.app" ]] || [[ -d "$HOME/Applications/${app}.app" ]]
+}
+
+# print_slack_theme_block <dark-key> <dark-slack> <light-key> <light-slack> [echo-fn]
+# Slack has no config file and no CLI/API for setting the sidebar theme, so
+# the best we can do is print the 8-value custom-theme string (see VS_SLACK
+# in vscode_theme_meta for the field order/derivation) and copy the dark
+# variant to the clipboard for a quick paste into Slack → Preferences →
+# Themes → Custom theme. $echo_fn (default: echo) styles the final
+# confirmation line — pass print_success / success for consistency with the
+# caller's other output.
+print_slack_theme_block() {
+    local dark_key="$1" dark_slack="$2" light_key="$3" light_slack="$4"
+    local echo_ok="${5:-echo}"
+    echo ""
+    echo "  Slack sidebar theme (Preferences → Themes → Custom theme → paste):"
+    echo ""
+    printf "    Dark  (%s):\n      %s\n" "$dark_key" "$dark_slack"
+    printf "    Light (%s):\n      %s\n" "$light_key" "$light_slack"
+    echo ""
+    if command -v pbcopy >/dev/null 2>&1; then
+        printf '%s' "$dark_slack" | pbcopy
+        "$echo_ok" "Slack dark variant copied to clipboard — paste and hit Enter in Slack"
+    fi
 }
 
 # save_theme_choice <theme-dark> <theme-light> → persists the pair to the

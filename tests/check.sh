@@ -227,6 +227,63 @@ else
     fail "THEME_LIB_MAX_CHOICE=$MAX_IN_LIB but highest case is $HIGHEST_CASE — bump one to match"
 fi
 
+# Every theme key handled by vscode_theme_meta must carry a well-formed
+# VS_SLACK string: exactly 8 comma-separated #RRGGBB hex colors (Slack's
+# custom-theme field order: column_bg,menu_bg,active_item,active_item_text,
+# hover_item,text_color,active_presence,badge). A malformed string pastes
+# into Slack as garbage with no error message, so this has to be caught here.
+section "Slack theme strings (VS_SLACK)"
+
+HEX8='^#[0-9a-fA-F]{6}(,#[0-9a-fA-F]{6}){7}$'
+while IFS=$'\t' read -r key slack_val; do
+    [[ -z "$key" || "$key" == "*" ]] && continue
+    if [[ -z "$slack_val" ]]; then
+        fail "vscode_theme_meta $key: no VS_SLACK found"
+    elif [[ "$slack_val" =~ $HEX8 ]]; then
+        ok "vscode_theme_meta $key: VS_SLACK well-formed (8 hex colors)"
+    else
+        fail "vscode_theme_meta $key: VS_SLACK malformed: '$slack_val' (need 8 comma-separated #RRGGBB values)"
+    fi
+done < <(awk '
+    /^vscode_theme_meta\(\)/ { infn = 1 }
+    infn && /^\}/            { infn = 0 }
+    infn && /^[[:space:]]+[a-z0-9*-]+\)[[:space:]]*$/ {
+        key = $0
+        gsub(/^[[:space:]]+/, "", key)
+        gsub(/\)[[:space:]]*$/, "", key)
+    }
+    infn && /VS_SLACK=/ {
+        line = $0
+        match(line, /VS_SLACK="[^"]*"/)
+        val = substr(line, RSTART + 10, RLENGTH - 11)
+        print key "\t" val
+    }
+' "$REPO/lib/theme-lib.sh")
+
+# Regression guard: the Slack theme printout must actually be reachable from
+# both entry points, or it silently regresses back to "install.sh only,
+# dark variant only" (the state this whole feature request was about fixing).
+if grep -q "SLACK_THEME_LIGHT=" "$REPO/lib/theme-lib.sh"; then
+    ok "compute_vscode_pair_metadata captures SLACK_THEME_LIGHT (not just dark)"
+else
+    fail "compute_vscode_pair_metadata no longer captures SLACK_THEME_LIGHT — Slack light variant is lost"
+fi
+if grep -q "print_slack_theme_block" "$REPO/bin/theme-switch"; then
+    ok "bin/theme-switch prints Slack theme strings"
+else
+    fail "bin/theme-switch no longer calls print_slack_theme_block — theme-switch users can't get Slack colors"
+fi
+if grep -q -- "--slack)" "$REPO/bin/theme-switch"; then
+    ok "bin/theme-switch supports --slack flag"
+else
+    fail "bin/theme-switch is missing the --slack flag"
+fi
+if grep -q "print_slack_theme_block" "$REPO/install.sh"; then
+    ok "install.sh prints Slack theme strings"
+else
+    fail "install.sh no longer calls print_slack_theme_block"
+fi
+
 # Regression guard: qufiwefefwoyn.kanagawa looked like the "obvious" VS Code
 # port of kanagawa.nvim (it's what the neovim plugin's own README points to),
 # but it's dark-only AND unavailable through Cursor's Open VSX-backed

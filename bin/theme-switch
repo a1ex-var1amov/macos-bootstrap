@@ -10,6 +10,7 @@
 #   theme-switch <n|key>             # non-interactive; n = 1-15 or a theme key
 #   theme-switch --list              # print all pairs and exit
 #   theme-switch --current           # print the currently active pair and exit
+#   theme-switch --slack             # print/copy Slack theme strings for the current pair and exit
 #   theme-switch -h | --help
 #
 # Examples:
@@ -26,6 +27,8 @@
 #   ~/Library/Application Support/Code/User/settings.json      (re-rendered)
 #   ~/.config/tmux-theme.conf              (active tmux palette)
 #   ~/.config/nvim/lua/active_theme.lua    (active nvim palette)
+#   Slack has no config file — its sidebar theme string is printed + copied
+#   to the clipboard (if Slack.app is installed) for a manual paste.
 #
 # After running: Ghostty is nudged to reload automatically (SIGUSR2, falls
 # back to the Cmd+Shift+, keybind on very old Ghostty versions); tmux/nvim
@@ -83,6 +86,7 @@ Usage:
   theme-switch <n|key>             Non-interactive. n = 1-$THEME_LIB_MAX_CHOICE or theme key.
   theme-switch --list              Print all pairs and exit
   theme-switch --current           Print the currently active pair and exit
+  theme-switch --slack             Print/copy Slack theme strings for the current pair and exit
   theme-switch -h | --help         This message
 
 Keys (all map to a menu number; you can also pass numbers directly):
@@ -115,11 +119,28 @@ print_current() {
     fi
 }
 
+print_slack() {
+    if [[ ! -f ~/.config/terminal-theme-pair ]]; then
+        warn "No theme pair active — run theme-switch to pick one first."
+        exit 1
+    fi
+    # shellcheck disable=SC1090
+    source ~/.config/terminal-theme-pair
+    if [[ -z "${THEME_DARK:-}" || -z "${THEME_LIGHT:-}" ]]; then
+        warn "No theme pair active — run theme-switch to pick one first."
+        exit 1
+    fi
+    compute_vscode_pair_metadata "$THEME_DARK" "$THEME_LIGHT"
+    status "Slack sidebar theme for: $THEME_DARK ↔ $THEME_LIGHT"
+    print_slack_theme_block "$THEME_DARK" "$SLACK_THEME_DARK" "$THEME_LIGHT" "$SLACK_THEME_LIGHT" success
+}
+
 # ── Handle flags first (all short-circuit) ──────────────────────────────────
 case "${1:-}" in
     -h|--help)     usage;         exit 0 ;;
     --list)        print_list;    exit 0 ;;
     --current)     print_current; exit 0 ;;
+    --slack)       print_slack;   exit 0 ;;
 esac
 
 # ── Resolve the desired choice ──────────────────────────────────────────────
@@ -265,6 +286,14 @@ for f in "$REPO"/configs/nvim/themes/*.lua; do
 done
 if apply_nvim_theme "$NEW_DARK"; then
     success "Neovim   → $NEW_DARK (open a new nvim, or :source \$MYVIMRC in an existing one)"
+fi
+
+# ── Slack ───────────────────────────────────────────────────────────────────
+# No config file/API to push this into Slack automatically — print + copy
+# the string instead. compute_vscode_pair_metadata (above) already populated
+# SLACK_THEME_DARK/LIGHT from this exact pair.
+if app_installed "Slack"; then
+    print_slack_theme_block "$NEW_DARK" "$SLACK_THEME_DARK" "$NEW_LIGHT" "$SLACK_THEME_LIGHT" success
 fi
 
 echo ""

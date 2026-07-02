@@ -1,6 +1,6 @@
 # macOS Bootstrap + Terminal Config
 
-A complete macOS developer bootstrap: one script that takes a fresh machine to a fully configured, themed terminal environment. Pick one of 15 colour-scheme pairs that follow macOS appearance, and the installer themes Ghostty, Cursor, VS Code, tmux, Neovim, Slack, `bat`, and `delta` to match — with auto-switching between the dark and light side as the system flips.
+A complete macOS developer bootstrap: one script that takes a fresh machine to a fully configured, themed terminal environment. Pick one of 15 colour-scheme pairs that follow macOS appearance, and the installer themes Ghostty, Cursor, VS Code, tmux, Neovim, `bat`, and `delta` to match — with auto-switching between the dark and light side as the system flips. It also generates a matching Slack sidebar theme string (printed + copied to your clipboard, ready to paste — Slack has no config file to write automatically).
 
 ## What It Sets Up
 
@@ -19,7 +19,7 @@ A complete macOS developer bootstrap: one script that takes a fresh machine to a
 | **Languages** | Go, Node.js via fnm, Terraform |
 | **Modern CLI** | bat, eza, ripgrep, fd, delta, btop, duf, dust, yazi, procs, lazygit, lazydocker, mosh, httpie, and more |
 
-Pick any of the 15 theme pairs in the installer and the whole stack — Ghostty, Cursor, VS Code, Slack, plus tmux/nvim via the `theme-sync` shell function — follows macOS appearance changes natively.
+Pick any of the 15 theme pairs in the installer and the whole stack — Ghostty, Cursor, VS Code, plus tmux/nvim via the `theme-sync` shell function — follows macOS appearance changes natively. Slack isn't scriptable this way, so `install.sh` and `theme-switch` print a ready-to-paste Slack theme string instead (and copy it to your clipboard).
 
 Available pairs (pick one in the installer menu, or pass `--theme=<key>` for unattended installs):
 
@@ -270,10 +270,11 @@ theme-switch 11                  # jump straight to Gruvbox
 theme-switch gruvbox             # same, by name
 theme-switch --list              # print all pairs and exit
 theme-switch --current           # print the currently active pair
+theme-switch --slack             # print/copy Slack theme strings for the current pair
 theme-switch --help
 ```
 
-Cursor / VS Code need a "Developer: Reload Window" (`Cmd+Shift+P`) to pick up the new theme; every other layer (Ghostty, tmux, nvim, bat, delta) live-reloads. The shared theme tables live in `lib/theme-lib.sh` — both `install.sh` and `theme-switch` source it, so adding a new pair is a single-file edit.
+Cursor / VS Code need a "Developer: Reload Window" (`Cmd+Shift+P`) to pick up the new theme; Ghostty reloads itself automatically (nudged via a signal); every other layer (tmux, nvim, bat, delta) live-reloads on its own. Slack has no config file to write, so a matching sidebar theme string is printed and copied to your clipboard instead — paste it into Slack → Preferences → Themes → Custom theme. The shared theme tables live in `lib/theme-lib.sh` — both `install.sh` and `theme-switch` source it, so adding a new pair is a single-file edit.
 
 ### Tmux mouse mode (chosen at install time)
 

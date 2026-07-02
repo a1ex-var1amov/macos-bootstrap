@@ -148,11 +148,8 @@ is_installed() {
     esac
 }
 
-# Check if a macOS .app is installed (for casks that don't put a CLI in PATH)
-app_installed() {
-    local app="$1"
-    [[ -d "/Applications/${app}.app" ]] || [[ -d "$HOME/Applications/${app}.app" ]]
-}
+# app_installed (checks for casks that don't put a CLI in PATH) lives in
+# lib/theme-lib.sh, sourced above — shared with bin/theme-switch.
 
 echo ""
 echo "════════════════════════════════════════════════════════"
@@ -895,16 +892,8 @@ fi
 
 # ── Slack ────────────────────────────────────────────────────────────────────
 if app_installed "Slack"; then
-    echo ""
-    print_status "Slack sidebar theme for: $COLOR_THEME"
-    echo ""
-    echo "    $SLACK_THEME"
-    echo ""
-    echo "  Apply: Slack → Preferences → Themes → Colors → Custom theme → paste above"
-    if command_exists pbcopy; then
-        echo "$SLACK_THEME" | pbcopy
-        print_success "Slack theme string copied to clipboard — paste and hit Enter in Slack"
-    fi
+    print_status "Slack sidebar theme for: $THEME_DARK ↔ $THEME_LIGHT"
+    print_slack_theme_block "$THEME_DARK" "$SLACK_THEME_DARK" "$THEME_LIGHT" "$SLACK_THEME_LIGHT" print_success
 else
     print_warning "Slack not found — skipping Slack theme"
 fi
