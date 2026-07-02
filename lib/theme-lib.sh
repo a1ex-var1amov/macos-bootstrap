@@ -450,22 +450,35 @@ app_installed() {
 # Slack has no config file and no CLI/API for setting the sidebar theme, so
 # the best we can do is print the 8-value custom-theme string (see VS_SLACK
 # in vscode_theme_meta for the field order/derivation) and copy the dark
-# variant to the clipboard for a quick paste into Slack → Preferences →
-# Themes → Custom theme. $echo_fn (default: echo) styles the final
-# confirmation line — pass print_success / success for consistency with the
-# caller's other output.
+# variant to the clipboard for a quick paste into Slack.
+#
+# IMPORTANT: since Slack's 2023 redesign ("A new visual language for Slack"),
+# the main Custom Theme color pickers no longer take arbitrary hex — Slack's
+# own design team collapsed 9 free-form inputs down to 4, mapped against ~20
+# predetermined palettes. The old 8/9/10-hex-string format still works, but
+# only via the "Import theme" legacy path (Preferences → Appearance → Custom
+# theme → Import theme → "Paste your legacy theme colors" → Apply), NOT by
+# pasting into the regular color-swatch UI. Don't "fix" the instructions
+# below back to a plain paste without re-checking Slack's current UI first.
+# $echo_fn (default: echo) styles the final confirmation line — pass
+# print_success / success for consistency with the caller's other output.
 print_slack_theme_block() {
     local dark_key="$1" dark_slack="$2" light_key="$3" light_slack="$4"
     local echo_ok="${5:-echo}"
     echo ""
-    echo "  Slack sidebar theme (Preferences → Themes → Custom theme → paste):"
+    echo "  Slack sidebar theme (modern Slack's Custom Theme color pickers no"
+    echo "  longer take free hex, but the legacy string import still does):"
+    echo "    Easiest: paste into any Slack message/DM and hit Enter, then"
+    echo "             click \"Apply Slack theme\" on the preview."
+    echo "    Or:      Preferences → Appearance → Custom theme → Import theme"
+    echo "             → \"Paste your legacy theme colors\" → Apply."
     echo ""
     printf "    Dark  (%s):\n      %s\n" "$dark_key" "$dark_slack"
     printf "    Light (%s):\n      %s\n" "$light_key" "$light_slack"
     echo ""
     if command -v pbcopy >/dev/null 2>&1; then
         printf '%s' "$dark_slack" | pbcopy
-        "$echo_ok" "Slack dark variant copied to clipboard — paste and hit Enter in Slack"
+        "$echo_ok" "Slack dark variant copied to clipboard — paste it into a Slack message (or the legacy import dialog)"
     fi
 }
 

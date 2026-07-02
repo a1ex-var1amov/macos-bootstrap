@@ -274,7 +274,7 @@ theme-switch --slack             # print/copy Slack theme strings for the curren
 theme-switch --help
 ```
 
-Cursor / VS Code need a "Developer: Reload Window" (`Cmd+Shift+P`) to pick up the new theme; Ghostty reloads itself automatically (nudged via a signal); every other layer (tmux, nvim, bat, delta) live-reloads on its own. Slack has no config file to write, so a matching sidebar theme string is printed and copied to your clipboard instead — paste it into Slack → Preferences → Themes → Custom theme. The shared theme tables live in `lib/theme-lib.sh` — both `install.sh` and `theme-switch` source it, so adding a new pair is a single-file edit.
+Cursor / VS Code need a "Developer: Reload Window" (`Cmd+Shift+P`) to pick up the new theme; Ghostty reloads itself automatically (nudged via a signal); every other layer (tmux, nvim, bat, delta) live-reloads on its own. Slack has no config file to write, so a matching sidebar theme string is printed and copied to your clipboard instead. Note that Slack's 2023 redesign replaced free-hex color pickers with ~20 preset palettes, so paste it via the *legacy* import: easiest is pasting into any Slack message/DM and clicking "Apply Slack theme" on the preview, or Preferences → Appearance → Custom theme → Import theme → "Paste your legacy theme colors". The shared theme tables live in `lib/theme-lib.sh` — both `install.sh` and `theme-switch` source it, so adding a new pair is a single-file edit.
 
 ### Tmux mouse mode (chosen at install time)
 
