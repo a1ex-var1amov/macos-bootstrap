@@ -187,7 +187,7 @@ else
 fi
 
 # ── Resolve the pair from the choice ────────────────────────────────────────
-theme_choice_to_pair "$CHOICE" >/dev/null   # side-effect: sets $THEME_DARK / $THEME_LIGHT
+theme_choice_to_pair "$CHOICE"   # sets $THEME_DARK / $THEME_LIGHT
 NEW_DARK="$THEME_DARK"
 NEW_LIGHT="$THEME_LIGHT"
 
@@ -217,13 +217,10 @@ save_theme_choice "$NEW_DARK" "$NEW_LIGHT"
 # ── Ghostty ─────────────────────────────────────────────────────────────────
 mkdir -p ~/.config/ghostty/themes
 # Refresh theme files defensively (cheap; means a pull-only workflow works).
-for f in "$REPO"/configs/ghostty/themes/*; do
-    cp "$f" ~/.config/ghostty/themes/
-done
+cp "$REPO"/configs/ghostty/themes/* ~/.config/ghostty/themes/
 render_ghostty_config "dark:$NEW_DARK,light:$NEW_LIGHT"
 ECHO_OK=success ensure_ghostty_appsupport_shim
-if pgrep -x ghostty >/dev/null 2>&1; then
-    reload_ghostty_if_running
+if reload_ghostty_if_running; then
     success "Ghostty  → dark:$NEW_DARK,light:$NEW_LIGHT (reloaded automatically)"
 else
     success "Ghostty  → dark:$NEW_DARK,light:$NEW_LIGHT"
@@ -267,9 +264,7 @@ fi
 
 # ── Tmux ────────────────────────────────────────────────────────────────────
 mkdir -p ~/.config/tmux/themes
-for f in "$REPO"/configs/tmux/themes/*.conf; do
-    cp "$f" ~/.config/tmux/themes/
-done
+cp "$REPO"/configs/tmux/themes/*.conf ~/.config/tmux/themes/
 if apply_tmux_theme "$NEW_DARK"; then
     if command -v tmux >/dev/null 2>&1 && tmux info &>/dev/null; then
         success "Tmux     → $NEW_DARK (live-reloaded)"

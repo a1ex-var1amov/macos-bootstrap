@@ -32,9 +32,7 @@ fi
 
 # ── Resolution helpers ──────────────────────────────────────────────────────
 
-# theme_choice_to_pair <choice-num> → echoes "DARK LIGHT" and also sets
-#   $THEME_DARK / $THEME_LIGHT globals as a side-effect (convenient for
-#   callers that just want to `theme_choice_to_pair 11` and read the pair).
+# theme_choice_to_pair <choice-num> → sets $THEME_DARK / $THEME_LIGHT.
 theme_choice_to_pair() {
     case "$1" in
         1)  THEME_DARK=catppuccin-mocha     ; THEME_LIGHT=catppuccin-latte    ;;
@@ -54,7 +52,6 @@ theme_choice_to_pair() {
         15) THEME_DARK=nord                 ; THEME_LIGHT=nord-light          ;;
         *)  THEME_DARK=catppuccin-mocha     ; THEME_LIGHT=catppuccin-latte    ;;
     esac
-    echo "$THEME_DARK $THEME_LIGHT"
 }
 
 # theme_key_to_choice <n|key> → echoes the menu number (1-15) for a key.
@@ -359,10 +356,11 @@ ensure_ghostty_appsupport_shim() {
 # it). Without this, writing a new theme to disk is silently invisible until
 # the user manually reloads or restarts — this is the #1 cause of "theme-
 # switch says it worked but Ghostty still looks the same".
-# No-ops silently if Ghostty isn't running or `pkill` can't find it; the
-# manual Cmd+Shift+, keybind always remains as a fallback regardless.
+# Returns 0 if a running Ghostty was signaled, non-zero otherwise (callers
+# use this to word their status line); the manual Cmd+Shift+, keybind always
+# remains as a fallback regardless.
 reload_ghostty_if_running() {
-    pkill -SIGUSR2 -x ghostty 2>/dev/null || true
+    pkill -SIGUSR2 -x ghostty 2>/dev/null
 }
 
 # render_vscode_settings <src-template> <dst-settings.json>

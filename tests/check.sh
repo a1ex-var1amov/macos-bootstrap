@@ -368,7 +368,11 @@ fi
 # ── 5. No personal / company-specific info ───────────────────────────────────
 section "No personal info"
 
-# Patterns that should never appear in tracked config files
+# Patterns that should never appear in any tracked file. Scanned with
+# `git grep` so the check covers exactly what would be pushed (tracked files
+# only, whole repo) — a previous leak (.claude/settings.local.json with
+# $HOME paths) sat outside the old configs/-only scan. This file excludes
+# itself since it must name the patterns.
 PERSONAL_PATTERNS=(
     "nvpark"
     "sc-k8s-"
@@ -376,14 +380,11 @@ PERSONAL_PATTERNS=(
     "nvidia\.com"
     "rke2-dev"
     "rke2-prod"
+    "a13x22"
 )
 
 for pattern in "${PERSONAL_PATTERNS[@]}"; do
-    matches=$(grep -r --include="*.zsh" --include="*.sh" --include="*.conf" \
-                      --include="*.toml" --include="*.lua" --include="*.json" \
-                      --include="*.md" \
-                      "$pattern" "$REPO/configs/" "$REPO/install.sh" "$REPO/README.md" \
-                      2>/dev/null || true)
+    matches=$(cd "$REPO" && git grep -I "$pattern" -- ':!tests/check.sh' 2>/dev/null || true)
     if [[ -z "$matches" ]]; then
         ok "no '$pattern'"
     else

@@ -16,5 +16,9 @@ jobs:
       - name: Install shellcheck and zsh
         run: sudo apt-get install -y shellcheck zsh
 
+      # --repo-only: the runner has no brew tools, no ~/.zshrc, no Cursor —
+      # the "installed tools / config files" sections only make sense on a
+      # machine that actually ran install.sh. Without the flag CI is
+      # permanently red on those checks.
       - name: Run checks
-        run: bash tests/check.sh
+        run: bash tests/check.sh --repo-only

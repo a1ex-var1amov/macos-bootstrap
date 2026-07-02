@@ -13,6 +13,8 @@
 .tmp-*/
 *.bak
 *.bak.[0-9]*
+*.log
+.nvimlog
 
 # Direnv / env caches
 .direnv/

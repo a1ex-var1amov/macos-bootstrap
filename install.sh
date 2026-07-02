@@ -592,7 +592,7 @@ else
 fi
 
 # Sets $THEME_DARK / $THEME_LIGHT as side-effects.
-theme_choice_to_pair "$COLOR_CHOICE" >/dev/null
+theme_choice_to_pair "$COLOR_CHOICE"
 
 COLOR_THEME="$THEME_DARK"
 GHOSTTY_THEME="dark:$THEME_DARK,light:$THEME_LIGHT"
@@ -657,8 +657,7 @@ ECHO_OK=print_success ensure_ghostty_appsupport_shim
 # Ghostty doesn't watch its config files for changes (upstream "wontfix"),
 # so without this, a running Ghostty keeps its old colors until the user
 # manually reloads (Cmd+Shift+,) or restarts. Nudge it now if it's running.
-if pgrep -x ghostty >/dev/null 2>&1; then
-    reload_ghostty_if_running
+if reload_ghostty_if_running; then
     print_success "Ghostty reloaded (running instance picked up the new theme)"
 fi
 
