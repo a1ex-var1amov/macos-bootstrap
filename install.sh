@@ -657,6 +657,14 @@ print_success "Ghostty config (theme: $GHOSTTY_THEME)"
 # the single source of truth regardless of how Ghostty was launched.
 ECHO_OK=print_success ensure_ghostty_appsupport_shim
 
+# Ghostty doesn't watch its config files for changes (upstream "wontfix"),
+# so without this, a running Ghostty keeps its old colors until the user
+# manually reloads (Cmd+Shift+,) or restarts. Nudge it now if it's running.
+if pgrep -x ghostty >/dev/null 2>&1; then
+    reload_ghostty_if_running
+    print_success "Ghostty reloaded (running instance picked up the new theme)"
+fi
+
 # Zsh
 backup_file ~/.zshrc
 cp "$SCRIPT_DIR/configs/zsh/zshrc" ~/.zshrc
@@ -1058,7 +1066,8 @@ echo -e "   ${GREEN}${BOLD}Bootstrap Complete!${NC}"
 echo "════════════════════════════════════════════════════════"
 echo ""
 echo "Next steps:"
-echo "  1. Restart Ghostty (or reload: Cmd+Shift+,)  ← picks up new theme"
+echo "  1. If Ghostty was already running, it was just reloaded automatically."
+echo "     First launch (or if that didn't take): Cmd+Shift+, to reload."
 echo "  2. Reload shell:  source ~/.zshrc"
 echo "  3. Run 'nvim'  — lazy.nvim auto-installs plugins on first launch"
 echo ""

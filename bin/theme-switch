@@ -27,8 +27,10 @@
 #   ~/.config/tmux-theme.conf              (active tmux palette)
 #   ~/.config/nvim/lua/active_theme.lua    (active nvim palette)
 #
-# After running, terminal apps live-reload; Cursor / VS Code need a Reload
-# Window (Cmd+Shift+P → "Developer: Reload Window") to pick up new colors.
+# After running: Ghostty is nudged to reload automatically (SIGUSR2, falls
+# back to the Cmd+Shift+, keybind on very old Ghostty versions); tmux/nvim
+# live-reload on their own; Cursor / VS Code need a Reload Window
+# (Cmd+Shift+P → "Developer: Reload Window") to pick up new colors.
 
 set -euo pipefail
 
@@ -199,7 +201,12 @@ for f in "$REPO"/configs/ghostty/themes/*; do
 done
 render_ghostty_config "dark:$NEW_DARK,light:$NEW_LIGHT"
 ECHO_OK=success ensure_ghostty_appsupport_shim
-success "Ghostty  → dark:$NEW_DARK,light:$NEW_LIGHT"
+if pgrep -x ghostty >/dev/null 2>&1; then
+    reload_ghostty_if_running
+    success "Ghostty  → dark:$NEW_DARK,light:$NEW_LIGHT (reloaded automatically)"
+else
+    success "Ghostty  → dark:$NEW_DARK,light:$NEW_LIGHT"
+fi
 
 # ── Cursor / VS Code ────────────────────────────────────────────────────────
 compute_vscode_pair_metadata "$NEW_DARK" "$NEW_LIGHT"

@@ -351,6 +351,20 @@ ensure_ghostty_appsupport_shim() {
     "$echo_ok" "Ghostty AppSupport config synced with ~/.config/ghostty/config"
 }
 
+# reload_ghostty_if_running → makes a running Ghostty actually pick up the
+# config we just wrote. Ghostty does NOT watch its config files for changes
+# (a deliberate upstream "wontfix" — see ghostty-org/ghostty#449); it only
+# reloads on the Cmd+Shift+, keybind or on receiving SIGUSR2 (supported since
+# ghostty-org/ghostty#7751, ~mid-2025, so any reasonably current install has
+# it). Without this, writing a new theme to disk is silently invisible until
+# the user manually reloads or restarts — this is the #1 cause of "theme-
+# switch says it worked but Ghostty still looks the same".
+# No-ops silently if Ghostty isn't running or `pkill` can't find it; the
+# manual Cmd+Shift+, keybind always remains as a fallback regardless.
+reload_ghostty_if_running() {
+    pkill -SIGUSR2 -x ghostty 2>/dev/null || true
+}
+
 # render_vscode_settings <src-template> <dst-settings.json>
 # Substitutes __VSCODE_*__ placeholders. Callers must set:
 #   VSCODE_COLOR_THEME, VSCODE_DARK_THEME, VSCODE_LIGHT_THEME,

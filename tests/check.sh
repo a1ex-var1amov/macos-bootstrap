@@ -267,6 +267,28 @@ else
     fail "ensure_ghostty_appsupport_shim no longer strips config-file lines from the AppSupport mirror — this can re-trigger Ghostty's 'cycle detected' bug via config.local being double-included"
 fi
 
+# Regression guard: Ghostty does not watch its config files for changes
+# (upstream "wontfix", ghostty-org/ghostty#449) — writing a new theme to disk
+# is invisible to a running Ghostty until it's told to reload (Cmd+Shift+, or
+# SIGUSR2, supported since ghostty-org/ghostty#7751). Both theme-switch and
+# install.sh must nudge a running instance, or "switching themes doesn't do
+# anything" for anyone who already has Ghostty open (which is the common case).
+if grep -q "^reload_ghostty_if_running()" "$REPO/lib/theme-lib.sh"; then
+    ok "lib/theme-lib.sh defines reload_ghostty_if_running"
+else
+    fail "lib/theme-lib.sh is missing reload_ghostty_if_running — Ghostty never auto-reloads after a theme switch (needs Cmd+Shift+, manually every time)"
+fi
+if grep -q "reload_ghostty_if_running" "$REPO/bin/theme-switch"; then
+    ok "bin/theme-switch calls reload_ghostty_if_running"
+else
+    fail "bin/theme-switch never calls reload_ghostty_if_running — a running Ghostty won't pick up the new theme"
+fi
+if grep -q "reload_ghostty_if_running" "$REPO/install.sh"; then
+    ok "install.sh calls reload_ghostty_if_running"
+else
+    fail "install.sh never calls reload_ghostty_if_running — a running Ghostty won't pick up the new theme"
+fi
+
 # Regression guard: gh-dash is a `gh` CLI extension (dlvhdr/gh-dash), not a
 # Homebrew formula/cask. `brew install gh-dash` / `brew "gh-dash"` always
 # fail with "No formulae or casks found for gh-dash".

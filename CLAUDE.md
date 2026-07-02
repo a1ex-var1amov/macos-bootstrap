@@ -204,6 +204,9 @@ If you ever see "cycle detected" pointing at a Ghostty config file, check for AN
 
 When changing how the Ghostty config is rendered, update the XDG render block (`sed … > ~/.config/ghostty/config`) and then call `ensure_ghostty_appsupport_shim` (or re-run `theme-switch`) so the AppSupport mirror stays in sync — never write a `config-file =` directive into the AppSupport path.
 
+### Ghostty doesn't reload on its own — you must nudge it
+Ghostty deliberately does not watch its config files for changes (upstream "wontfix", ghostty-org/ghostty#449). Writing a new `theme = …` to disk is completely invisible to an already-running Ghostty window until it's told to reload, via either the `Cmd+Shift+,` keybind or a `SIGUSR2` signal (supported since ghostty-org/ghostty#7751, merged mid-2025 — any reasonably current Ghostty has it). `reload_ghostty_if_running` in `lib/theme-lib.sh` does `pkill -SIGUSR2 -x ghostty`; both `theme-switch` and `install.sh` call it right after rendering the new config. If you ever see "I ran theme-switch but Ghostty still looks the same," this is almost certainly why — check that `reload_ghostty_if_running` is still being called after `render_ghostty_config`/`ensure_ghostty_appsupport_shim`, and as a fallback the user can always press `Cmd+Shift+,` manually.
+
 ### Cursor / VS Code light theme overrides for "no real light variant" cases
 Two theme pairs need a special-case override on the IDE side because their extension's "light" variant isn't actually a `vs`/`hc-light` theme — `autoDetectColorScheme` silently no-ops when `preferredLightColorTheme` points at a `vs-dark` theme.
 - **Dracula** (option 9, `THEME_LIGHT=dracula-alucard`) — the Dracula extension's "Dracula Theme Soft" is `vs-dark`. `install.sh` substitutes `rose-pine-dawn` on the IDE side only (tmux/nvim/Ghostty keep using `dracula-alucard`, which all three have real light recipes for).
